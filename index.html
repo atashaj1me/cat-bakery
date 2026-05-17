@@ -17,33 +17,42 @@
       <button id="reset" class="ghost small">Reset progress</button>
     </header>
 
+    <div class="dashboard-strip" id="dashboard"></div>
+
+    <a class="campaign-tile" href="chapters/daily.html" id="campaign-tile">
+      <div class="lead">🏪 The Master Baker Campaign</div>
+      <div class="sub" id="campaign-sub">Your father has bequeathed you the bakery. Survive 10 days of cat-society economics — letters from the Queen, inspectors, customers — to graduate as Master Baker.</div>
+      <span class="cta" id="campaign-cta">▶ Start Day 1</span>
+    </a>
+
     <div class="card story">
       <div class="cat-line">
         <span class="emoji">🐱</span>
         <div class="speech">
           <span class="name">Mayor Mittens:</span>
-          Welcome, baker. The Cat Society needs bread, pastries, and the occasional fish-pie.
-          Each chapter is a real microeconomics problem in disguise.
-          Run the sim, ace the MCQs, unlock the next chapter. When all six post-midterm chapters
-          are clear, the 75-minute Final Exam unlocks — the same shape as the real ECON201 final.
+          Two ways to learn the syllabus. <strong>The Campaign</strong> above is your daily bakery — problems arrive as letters, you make business decisions, the algebra is hidden in the gameplay. <strong>The Reference Notebooks</strong> below break down each chapter formally for review. Both feed into the same Royal Exam at the end.
         </div>
       </div>
     </div>
 
-    <h2>Chapter map</h2>
+    <h2>📚 Reference Notebooks</h2>
+    <p style="margin-top:-8px; color:var(--muted); font-size:0.95em;">Open these mid-campaign if a letter stumps you, or use them as a structured study path.</p>
     <div class="tile-grid" id="map"></div>
 
-    <h2>Your record</h2>
+    <h2>📔 Recent activity</h2>
     <div id="record" class="card"></div>
+
+    <h2>🏆 Achievements</h2>
+    <div id="ach"></div>
 
     <h2>How this game maps to the exam</h2>
     <div class="card">
       <p>The ECON201 final is 75 minutes: 15 MCQs (60 pts) and essays (~40 pts). Per the practice exam, post-midterm material is ~80% of MCQs (Ch 14, 18, 19, 20, 21, 22, 23). The essays are guaranteed to be either:</p>
       <ul>
-        <li><strong>Essay 1 — Price-ceiling welfare</strong> (covered in Chapter 2)</li>
-        <li><strong>Essay 2 — Tariff surplus table</strong> (covered in Chapter 3)</li>
+        <li><strong>Essay 1 — Price-ceiling welfare</strong> (Day 4 of the campaign; or Chapter 2 reference)</li>
+        <li><strong>Essay 2 — Tariff surplus table</strong> (Day 6 of the campaign; or Chapter 3 reference)</li>
       </ul>
-      <p>Each chapter ends with three MCQs lifted directly from the vault's archetypes — so muscle memory transfers straight to exam recall.</p>
+      <p>Complete the campaign (or score ≥60% on Chapter 6) to unlock the 75-minute Royal Examination — same shape as the real final.</p>
     </div>
   </div>
 
@@ -51,17 +60,56 @@
     import { State } from "./assets/js/state.js";
 
     const CHAPTERS = [
-      { id: 0, num: "Warm-up", title: "Bakery Preparation", desc: "Consumer choice, production, profit max", file: "chapters/0-bakery-preparation.html" },
-      { id: 1, num: "Chapter 1", title: "Market Day", desc: "Competitive equilibrium · First Welfare Theorem", file: "chapters/1-market-day.html" },
-      { id: 2, num: "Chapter 2", title: "The Sugar Tax", desc: "Taxes, DWL, incidence · Essay 1 walkthrough", file: "chapters/2-sugar-tax.html" },
-      { id: 3, num: "Chapter 3", title: "Imported Flour & Tariffs", desc: "Trade, tariffs · Essay 2 walkthrough", file: "chapters/3-tariffs.html" },
-      { id: 4, num: "Chapter 4", title: "Oven Smoke", desc: "Externalities · Pigouvian tax", file: "chapters/4-oven-smoke.html" },
-      { id: 5, num: "Chapter 5", title: "The Lemon Loaves", desc: "Asymmetric information", file: "chapters/5-lemon-loaves.html" },
-      { id: 6, num: "Chapter 6", title: "The Only Bakery in Town", desc: "Monopoly · Lerner · 3rd-deg PD", file: "chapters/6-monopoly.html" },
-      { id: "mock", num: "★ Final Exam", title: "75-minute Final Mock", desc: "15 MCQs + 1 essay, real format", file: "chapters/final-mock.html", boss: true },
+      { id: 0, num: "Notebook 0", title: "Bakery Preparation", desc: "Consumer choice · production · profit max", file: "chapters/0-bakery-preparation.html" },
+      { id: 1, num: "Notebook 1", title: "Market Day", desc: "Competitive equilibrium · First Welfare Theorem", file: "chapters/1-market-day.html" },
+      { id: 2, num: "Notebook 2", title: "The Sugar Tax", desc: "Taxes, DWL, incidence · Essay 1 walkthrough", file: "chapters/2-sugar-tax.html" },
+      { id: 3, num: "Notebook 3", title: "Imported Flour & Tariffs", desc: "Trade, tariffs · Essay 2 walkthrough", file: "chapters/3-tariffs.html" },
+      { id: 4, num: "Notebook 4", title: "Oven Smoke", desc: "Externalities · Pigouvian tax", file: "chapters/4-oven-smoke.html" },
+      { id: 5, num: "Notebook 5", title: "The Lemon Loaves", desc: "Asymmetric information", file: "chapters/5-lemon-loaves.html" },
+      { id: 6, num: "Notebook 6", title: "The Only Bakery in Town", desc: "Monopoly · Lerner · 3rd-deg PD", file: "chapters/6-monopoly.html" },
+      { id: "mock", num: "★ Royal Exam", title: "75-minute Final Mock", desc: "15 MCQs + 1 essay, real format", file: "chapters/final-mock.html", boss: true },
+    ];
+
+    const ACHIEVEMENTS = [
+      { id: "first-sale",    label: "🥇 First Sale" },
+      { id: "rich",          label: "💰 100+ coin day" },
+      { id: "five-star",     label: "⭐ 5-star reputation" },
+      { id: "tax-survivor",  label: "🔥 Survived the sugar tax" },
+      { id: "monopolist",    label: "👑 Became monopolist" },
+      { id: "lerner-master", label: "🧮 Half-pass-through nailed" },
+      { id: "bankruptcy",    label: "💸 Recovered from bankruptcy" },
+      { id: "graduate",      label: "🎓 Master Baker certification" },
     ];
 
     const state = State.get();
+    const b = state.bakery;
+
+    // Dashboard
+    const dash = document.getElementById("dashboard");
+    dash.innerHTML = `
+      <div class="kpi"><span class="label">Day</span><span class="value">${b.day}/10</span></div>
+      <div class="kpi"><span class="label">💰 Cash</span><span class="value ${b.cash < 0 ? "bad" : b.cash > 200 ? "good" : ""}">${b.cash.toFixed(0)}</span></div>
+      <div class="kpi"><span class="label">⭐ Rep</span><span class="value">${b.reputation.toFixed(1)}/5</span></div>
+      <div class="kpi"><span class="label">📅 Days Done</span><span class="value">${b.daysCompleted.length}/10</span></div>
+      <div class="kpi"><span class="label">🏆 Badges</span><span class="value">${b.achievements.length}/${ACHIEVEMENTS.length}</span></div>
+    `;
+
+    // Campaign tile CTA
+    const cta = document.getElementById("campaign-cta");
+    if (b.graduated) {
+      cta.textContent = "🎓 Graduated — replay?";
+      document.getElementById("campaign-sub").textContent = "You earned the Master Baker certificate. The Royal Examination Room awaits.";
+    } else if (b.day === 1 && b.daysCompleted.length === 0) {
+      cta.textContent = "▶ Start Day 1";
+    } else {
+      cta.textContent = `▶ Continue — Day ${b.day}`;
+      const lastLog = b.log[0];
+      if (lastLog) {
+        document.getElementById("campaign-sub").innerHTML = `Last entry: <strong>Day ${lastLog.day} — ${lastLog.title}</strong>. ${lastLog.summary.replace(/<[^>]+>/g, '')}`;
+      }
+    }
+
+    // Reference Notebooks
     const mapEl = document.getElementById("map");
     CHAPTERS.forEach(ch => {
       const unlocked = state.unlocked[ch.id];
@@ -78,14 +126,29 @@
       mapEl.appendChild(a);
     });
 
+    // Recent activity
     const rec = document.getElementById("record");
-    const chapterCount = Object.keys(state.chapterScore).filter(k => k !== "mock").length;
     const lastMock = state.mockHistory[0];
-    rec.innerHTML = `
-      <p><strong>Chapters completed:</strong> ${chapterCount} / 7</p>
-      ${lastMock ? `<p><strong>Latest final mock (${lastMock.date}):</strong> MCQs ${lastMock.mcq}/15 · Essay ${lastMock.essay}/100 · Total ${lastMock.total}/100</p>` : "<p>No final mock attempts yet.</p>"}
-      ${state.mockHistory.length > 1 ? `<p><strong>Best mock total:</strong> ${Math.max(...state.mockHistory.map(m => m.total))}/100</p>` : ""}
-    `;
+    if (b.log.length === 0 && !lastMock) {
+      rec.innerHTML = `<p><em>No campaign days or exam attempts yet. Pick up your father's letter above.</em></p>`;
+    } else {
+      const recentLog = b.log.slice(0, 3).map(e => `
+        <div class="logbook-entry ${e.cashDelta >= 0 ? "win" : "fail"}">
+          <div class="day">Day ${e.day} — ${e.title}</div>
+          <div class="summary">${e.summary.replace(/<[^>]+>/g, '')}</div>
+        </div>
+      `).join("");
+      rec.innerHTML = `
+        ${recentLog || ""}
+        ${lastMock ? `<p style="margin-top:10px"><strong>Latest Royal Exam (${lastMock.date}):</strong> MCQs ${lastMock.mcq}/15 · Essay ${lastMock.essay}/100 · Total ${lastMock.total}/100</p>` : ""}
+      `;
+    }
+
+    // Achievements
+    const achEl = document.getElementById("ach");
+    achEl.innerHTML = ACHIEVEMENTS.map(a => `
+      <span class="achievement ${b.achievements.includes(a.id) ? "" : "locked"}">${a.label}</span>
+    `).join("");
 
     document.getElementById("reset").addEventListener("click", () => {
       if (confirm("Reset all progress? (clears localStorage)")) {

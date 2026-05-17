@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Master Baker Campaign — Cat Society Bakery</title>
+  <link rel="stylesheet" href="../assets/css/style.css">
+</head>
+<body>
+  <div class="shell">
+    <header class="topbar"></header>
+
+    <div class="dashboard-strip" id="dashboard"></div>
+
+    <div id="day-host"></div>
+
+    <h2>📔 Logbook</h2>
+    <div id="logbook"></div>
+
+    <h2>🏆 Achievements</h2>
+    <div id="ach"></div>
+  </div>
+
+  <script type="module">
+    import { header, cat } from "../assets/js/chapter.js";
+    import { State } from "../assets/js/state.js";
+    import { DAYS, getDay } from "../assets/js/data/days.js";
+    import { CATS, purchase } from "../assets/js/data/cats.js";
+
+    const ACHIEVEMENTS = [
+      { id: "first-sale",    label: "🥇 First Sale", check: b => b.daysCompleted.length >= 1 },
+      { id: "rich",          label: "💰 100+ coin day", check: (b, last) => last && last.cashDelta >= 100 },
+      { id: "five-star",     label: "⭐ 5-star reputation", check: b => b.reputation >= 4.8 },
+      { id: "tax-survivor",  label: "🔥 Survived the sugar tax", check: b => b.daysCompleted.includes(5) && b.cash > 0 },
+      { id: "monopolist",    label: "👑 Became monopolist", check: b => b.daysCompleted.includes(9) },
+      { id: "lerner-master", label: "🧮 Half-pass-through nailed", check: b => b.daysCompleted.includes(10) },
+      { id: "bankruptcy",    label: "💸 Recovered from bankruptcy", check: b => b.loansTaken >= 1 },
+      { id: "graduate",      label: "🎓 Master Baker certification", check: b => b.graduated },
+    ];
+
+    let pageState = { letter: null, currentDay: null };
+
+    function render() {
+      const b = State.bakery();
+      header({ num: "🏪", title: `Master Baker — Day ${b.day} of 10` });
+      renderDashboard(b);
+      renderDay(b);
+      renderLogbook(b);
+      renderAchievements(b);
+    }
+
+    function renderDashboard(b) {
+      const dash = document.getElementById("dashboard");
+      dash.innerHTML = `
+        <div class="kpi"><span class="label">Day</span><span class="value">${b.day}/10</span></div>
+        <div class="kpi"><span class="label">💰 Cash</span><span class="value ${b.cash < 0 ? "bad" : b.cash > 200 ? "good" : ""}">${b.cash.toFixed(0)}</span></div>
+        <div class="kpi"><span class="label">⭐ Reputation</span><span class="value">${b.reputation.toFixed(1)}/5</span></div>
+        <div class="kpi"><span class="label">🏆 Achievements</span><span class="value">${b.achievements.length}/${ACHIEVEMENTS.length}</span></div>
+        <div class="kpi"><span class="label">📚 Loans</span><span class="value">${b.loansTaken}</span></div>
+      `;
+    }
+
+    function renderDay(b) {
+      const host = document.getElementById("day-host");
+      host.innerHTML = "";
+
+      if (b.graduated) {
+        host.innerHTML = `
+          <div class="consequence-banner win" style="text-align:center; font-size:1.1em;">
+            🎓 <strong>Congratulations, Master Baker.</strong><br>
+            You survived 10 days, and the Royal Examiners are ready to certify you.
+            <br><br>
+            <a class="bigbtn" style="background:var(--accent); color:white; text-decoration:none; padding:14px 24px; border-radius:8px; display:inline-block;" href="final-mock.html">🏛️ Open the Royal Examination Room →</a>
+            <br><br>
+            <small>Want another playthrough? <button class="ghost small" onclick="if(confirm('Restart campaign?')){CatBakeryState.resetBakery();location.reload();}">Restart campaign</button></small>
+          </div>
+        `;
+        return;
+      }
+
+      const day = getDay(b.day);
+      if (!day) {
+        host.innerHTML = `<div class="card">No more days. <a href="../index.html">Back to map</a></div>`;
+        return;
+      }
+
+      const letter = day.letter();
+      pageState.letter = letter;
+      pageState.currentDay = day;
+
+      host.innerHTML = `
+        <h2>Day ${day.day} — ${day.title}</h2>
+        <div class="letter">
+          <div class="from">${letter.from}</div>
+          <div class="body">${letter.body}</div>
+        </div>
+        <div class="card">
+          <h3>Your decision</h3>
+          ${day.fields.map(f => `
+            <div class="field-row">
+              <label for="f-${f.id}">${f.label}</label>
+              <input id="f-${f.id}" type="number" step="0.01" class="cell">
+            </div>
+          `).join("")}
+          <button id="submit" class="bigbtn">Send my answer →</button>
+        </div>
+        <p style="text-align:center; margin-top:14px;">
+          <a class="ghost small" target="_blank" rel="noopener" href="${refLink(day.chapterRef.id)}" style="background:var(--paper); border:1px solid var(--border); padding:6px 12px; border-radius:6px; text-decoration:none; color:var(--accent-dark); font-size:0.9em;">📚 Reference: ${day.chapterRef.label}</a>
+        </p>
+        <div id="consequence"></div>
+      `;
+
+      document.getElementById("submit").addEventListener("click", () => submit(day, letter));
+    }
+
+    function refLink(chapterId) {
+      const map = {
+        0: "0-bakery-preparation.html",
+        1: "1-market-day.html",
+        2: "2-sugar-tax.html",
+        3: "3-tariffs.html",
+        4: "4-oven-smoke.html",
+        5: "5-lemon-loaves.html",
+        6: "6-monopoly.html",
+      };
+      return map[chapterId] || "../index.html";
+    }
+
+    function submit(day, letter) {
+      const answers = {};
+      day.fields.forEach(f => {
+        answers[f.id] = parseFloat(document.getElementById("f-" + f.id).value);
+      });
+      // Block empties:
+      if (Object.values(answers).some(v => !isFinite(v))) {
+        alert("Please fill in every field before submitting.");
+        return;
+      }
+      const result = day.grade(letter, answers);
+
+      // Build the cat queue cinematic
+      const queue = buildQueue(day);
+      const queueHTML = queue.map(q => `
+        <div class="queue-row">
+          <div class="portrait">${q.cat.emoji}</div>
+          <div>
+            <div class="name">${q.cat.name}</div>
+            <div class="reason">${q.result.reason || q.cat.blurb}</div>
+          </div>
+          <div class="verdict">${q.result.satisfied ? "😺" : "😾"}</div>
+        </div>
+      `).join("");
+
+      // Apply day result
+      const savedBefore = State.bakery();
+      const newState = State.applyDayResult({
+        day: day.day,
+        title: day.title,
+        yourAnswer: answers,
+        correctAnswer: result.targets,
+        cashDelta: result.cashDelta,
+        repDelta: result.repDelta,
+        summary: result.summary,
+      });
+
+      // Check achievements
+      const newlyEarned = [];
+      ACHIEVEMENTS.forEach(a => {
+        if (!newState.achievements.includes(a.id) && a.check(newState, newState.log[0])) {
+          if (State.awardAchievement(a.id)) newlyEarned.push(a.label);
+        }
+      });
+
+      // Bankruptcy modal (only if cash < 0 and no loan taken)
+      const finalState = State.bakery();
+      const bankrupt = finalState.cash < 0;
+
+      const verdictClass = result.score >= 80 ? "win" : result.score >= 50 ? "" : "fail";
+      const verdictTxt = result.score >= 80 ? "Excellent." : result.score >= 50 ? "Workable." : "Painful.";
+
+      const c = document.getElementById("consequence");
+      c.innerHTML = `
+        <div class="consequence-banner ${verdictClass}">
+          <strong>${verdictTxt}</strong> Score: ${Math.round(result.score)}/100 ·
+          Cash ${result.cashDelta >= 0 ? "+" : ""}${result.cashDelta} ·
+          Reputation ${result.repDelta >= 0 ? "+" : ""}${result.repDelta.toFixed(1)} ⭐
+        </div>
+        <div class="card">
+          <h3>What actually happened</h3>
+          <p>${result.summary}</p>
+          ${queueHTML.length ? `<h4 style="margin-top:14px">The day's customers</h4>${queueHTML}` : ""}
+        </div>
+        ${newlyEarned.length ? `<div class="consequence-banner win" style="text-align:center">🏆 Achievement unlocked: <strong>${newlyEarned.join(", ")}</strong></div>` : ""}
+        ${bankrupt ? `
+          <div class="consequence-banner fail" style="text-align:center">
+            💸 You are out of coins. The Whiskerton Mutual Cat Bank offers a 50-coin loan.
+            <br><br>
+            <button id="loan-btn">Take the 50-coin loan</button>
+          </div>` : ""}
+        ${day.day === 10 ? `
+          <div class="consequence-banner win" style="text-align:center; margin-top:16px;">
+            🎓 You have completed the campaign. The Royal Examiners await.
+            <br><br>
+            <a class="bigbtn" style="background:var(--accent); color:white; text-decoration:none; padding:14px 24px; border-radius:8px; display:inline-block;" href="final-mock.html">Take the Royal Exam →</a>
+          </div>
+        ` : `
+          <p style="text-align:center; margin-top:18px;">
+            <button id="sleep" class="bigbtn" style="max-width:300px; margin:0 auto;">🌙 Sleep until Day ${day.day + 1} →</button>
+          </p>
+        `}
+      `;
+
+      // Disable the submit button after the day is locked in
+      document.getElementById("submit").disabled = true;
+
+      const sleep = document.getElementById("sleep");
+      if (sleep) sleep.addEventListener("click", () => { window.scrollTo(0, 0); render(); });
+
+      const loanBtn = document.getElementById("loan-btn");
+      if (loanBtn) loanBtn.addEventListener("click", () => { State.takeLoan(50); render(); });
+
+      // Re-render dashboard / logbook
+      renderDashboard(finalState);
+      renderLogbook(finalState);
+      renderAchievements(finalState);
+
+      c.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+
+    // Build a 3-4 cat queue showing how each NPC reacted to today's setup.
+    function buildQueue(day) {
+      // Pick a roster relevant to the day's flavour.
+      const rosters = {
+        1: ["penny", "engineer"],
+        2: ["penny", "tim"],
+        3: ["penny", "engineer", "tim"],
+        4: ["penny", "engineer", "inspector"],
+        5: ["penny", "pawley", "furrington"],
+        6: ["penny", "cream", "engineer"],
+        7: ["penny", "inspector"],
+        8: ["inspector", "cream", "penny"],
+        9: ["penny", "pawley", "engineer", "tim"],
+        10: ["penny", "pawley", "cream", "engineer"],
+      };
+      const ids = rosters[day.day] || ["penny"];
+      // Build a stub price map from the day's setup (cheap fallback prices).
+      const prices = { loaf: 3, baguette: 4, croissant: 8, cake: 12, cupcake: 5 };
+      return ids.map(id => {
+        const cat = CATS[id];
+        const result = purchase(cat, prices, day.day < 8);
+        return { cat, result };
+      });
+    }
+
+    function renderLogbook(b) {
+      const host = document.getElementById("logbook");
+      if (!b.log.length) {
+        host.innerHTML = `<p><em>No entries yet — your day will be recorded here.</em></p>`;
+        return;
+      }
+      host.innerHTML = b.log.map(e => `
+        <div class="logbook-entry ${e.cashDelta >= 0 ? "win" : "fail"}">
+          <div class="day">Day ${e.day} — ${e.title}</div>
+          <div class="summary">${e.summary}</div>
+          <div class="summary">Cash ${e.cashDelta >= 0 ? "+" : ""}${e.cashDelta} · Rep ${e.repDelta >= 0 ? "+" : ""}${e.repDelta.toFixed(1)}</div>
+        </div>
+      `).join("");
+    }
+
+    function renderAchievements(b) {
+      const host = document.getElementById("ach");
+      host.innerHTML = ACHIEVEMENTS.map(a => `
+        <span class="achievement ${b.achievements.includes(a.id) ? "" : "locked"}">${a.label}</span>
+      `).join("");
+    }
+
+    render();
+  </script>
+</body>
+</html>

@@ -317,3 +317,173 @@ ul.trap-list li { margin-bottom: 6px; }
   header.topbar { flex-direction: column; align-items: flex-start; gap: 6px; }
   .timer { float: none; display: block; margin-bottom: 10px; }
 }
+
+/* ---------- Master Baker Campaign ---------- */
+
+.dashboard-strip {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 10px;
+  background: linear-gradient(135deg, #fffaf2 0%, #f7e7c4 100%);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px 16px;
+  margin: 12px 0;
+  box-shadow: var(--shadow);
+}
+.dashboard-strip .kpi {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-family: var(--mono);
+}
+.dashboard-strip .kpi .label {
+  font-size: 0.75em;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--muted);
+}
+.dashboard-strip .kpi .value {
+  font-size: 1.4em;
+  font-weight: bold;
+  color: var(--accent-dark);
+}
+.dashboard-strip .kpi .value.bad { color: var(--bad); }
+.dashboard-strip .kpi .value.good { color: var(--good); }
+
+.letter {
+  background: #fffaf2
+    repeating-linear-gradient(0deg, transparent, transparent 26px, #f3e3c4 26px, #f3e3c4 27px);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px 28px;
+  margin: 18px 0;
+  box-shadow: 0 4px 12px rgba(60, 42, 30, 0.18);
+  font-family: "Georgia", serif;
+  position: relative;
+  line-height: 1.7;
+}
+.letter::before {
+  content: "✉";
+  position: absolute;
+  top: -14px;
+  left: 20px;
+  background: var(--accent);
+  color: white;
+  font-size: 1.2em;
+  padding: 4px 10px;
+  border-radius: 14px;
+  box-shadow: var(--shadow);
+}
+.letter .from {
+  font-weight: bold;
+  color: var(--accent-dark);
+  font-size: 1.05em;
+  margin-bottom: 8px;
+  border-bottom: 1px dashed var(--border);
+  padding-bottom: 6px;
+}
+.letter .body { color: var(--ink); }
+.letter strong { color: var(--accent-dark); background: rgba(201, 122, 74, 0.08); padding: 1px 4px; border-radius: 3px; }
+
+.consequence-banner {
+  background: linear-gradient(135deg, #fdf0db, #f5e1c0);
+  border-radius: var(--radius);
+  padding: 16px 20px;
+  margin: 16px 0;
+  font-size: 1.05em;
+  border-left: 6px solid var(--accent);
+  animation: slideIn 0.4s ease-out;
+}
+.consequence-banner.win {
+  background: linear-gradient(135deg, #ddf2c8, #c0e2a0);
+  border-left-color: var(--good);
+}
+.consequence-banner.fail {
+  background: linear-gradient(135deg, #f8dada, #ecb8b8);
+  border-left-color: var(--bad);
+}
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.queue-row {
+  display: grid;
+  grid-template-columns: 48px 1fr auto;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 12px;
+  background: var(--paper);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin-bottom: 8px;
+  animation: slideIn 0.3s ease-out;
+}
+.queue-row .portrait { font-size: 2em; text-align: center; }
+.queue-row .name { font-weight: bold; color: var(--accent-dark); }
+.queue-row .reason { font-size: 0.85em; color: var(--muted); font-family: var(--mono); }
+.queue-row .verdict { font-size: 1.5em; }
+
+.logbook-entry {
+  background: var(--paper);
+  border-left: 4px solid var(--accent);
+  padding: 10px 14px;
+  margin-bottom: 8px;
+  border-radius: 0 var(--radius) var(--radius) 0;
+  font-size: 0.95em;
+}
+.logbook-entry .day { font-weight: bold; color: var(--accent-dark); }
+.logbook-entry .summary { color: var(--muted); font-size: 0.9em; margin-top: 4px; }
+.logbook-entry.win { border-left-color: var(--good); }
+.logbook-entry.fail { border-left-color: var(--bad); }
+
+.field-row {
+  display: grid;
+  grid-template-columns: 1fr 120px;
+  gap: 10px;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px dashed var(--border);
+}
+.field-row:last-child { border-bottom: none; }
+.field-row label { font-size: 1em; }
+
+.bigbtn {
+  display: block;
+  width: 100%;
+  font-size: 1.1em;
+  padding: 14px 20px;
+  margin-top: 14px;
+}
+
+.achievement {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: linear-gradient(135deg, #fef3d8, #f7e3aa);
+  border: 1px solid #d9b85a;
+  border-radius: 20px;
+  font-size: 0.9em;
+  margin: 4px 4px 4px 0;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+}
+.achievement.locked { opacity: 0.35; filter: grayscale(0.6); }
+
+.campaign-tile {
+  display: block;
+  text-decoration: none;
+  color: white;
+  background: linear-gradient(135deg, #c97a4a, #8a4a25);
+  border-radius: var(--radius);
+  padding: 22px 24px;
+  margin: 18px 0;
+  box-shadow: 0 6px 14px rgba(60, 42, 30, 0.25);
+  transition: transform 0.1s ease;
+}
+.campaign-tile:hover { transform: translateY(-2px); }
+.campaign-tile .lead { font-size: 1.3em; font-weight: bold; margin-bottom: 6px; }
+.campaign-tile .sub { opacity: 0.9; font-size: 0.95em; }
+.campaign-tile .cta { margin-top: 10px; display: inline-block; padding: 6px 12px; background: rgba(255,255,255,0.2); border-radius: 6px; font-family: var(--mono); }
