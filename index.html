@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=JetBrains+Mono:wght@400;600&display=swap">
-  <link rel="stylesheet" href="assets/css/style.css?v=3">
+  <link rel="stylesheet" href="assets/css/style.css?v=4">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ctext y='52' font-size='52'%3E🥐%3C/text%3E%3C/svg%3E">
 </head>
 <body>
@@ -23,9 +23,15 @@
     <div class="dashboard-strip" id="dashboard"></div>
 
     <a class="campaign-tile" href="chapters/daily.html" id="campaign-tile">
-      <div class="lead">🏪 The Master Baker Campaign</div>
+      <div class="lead">🏪 Vanilla Mode — The Master Baker Campaign</div>
       <div class="sub" id="campaign-sub">Your father has bequeathed you the bakery. Survive 10 days of cat-society economics — letters from the Queen, inspectors, customers — to graduate as Master Baker.</div>
       <span class="cta" id="campaign-cta">▶ Start Day 1</span>
+    </a>
+
+    <a class="campaign-tile hell" href="chapters/daily.html?mode=hell" id="hell-tile">
+      <div class="lead">🔱 Hell Mode — Surviving Hell Market</div>
+      <div class="sub" id="hell-sub">14 phased days of compound, exam-grade economics. Cournot, Stackelberg, Laffer peaks, quota rents, externality+monopoly, and a final-form rehearsal of both essay archetypes. Tighter tolerances, no hints, multi-stage decisions per day.</div>
+      <span class="cta" id="hell-cta">▶ Locked until Vanilla Day 10</span>
     </a>
 
     <div class="card story">
@@ -60,7 +66,7 @@
   </div>
 
   <script type="module">
-    import { State } from "./assets/js/state.js";
+    import { State } from "./assets/js/state.js?v=4";
 
     const CHAPTERS = [
       { id: 0, num: "Notebook 0", title: "Bakery Preparation", desc: "Consumer choice · production · profit max", file: "chapters/0-bakery-preparation.html" },
@@ -74,34 +80,43 @@
     ];
 
     const ACHIEVEMENTS = [
-      { id: "first-sale",    label: "🥇 First Sale" },
-      { id: "rich",          label: "💰 100+ coin day" },
-      { id: "five-star",     label: "⭐ 5-star reputation" },
-      { id: "tax-survivor",  label: "🔥 Survived the sugar tax" },
-      { id: "monopolist",    label: "👑 Became monopolist" },
-      { id: "lerner-master", label: "🧮 Half-pass-through nailed" },
-      { id: "bankruptcy",    label: "💸 Recovered from bankruptcy" },
-      { id: "graduate",      label: "🎓 Master Baker certification" },
+      { id: "first-sale",     label: "🥇 First Sale" },
+      { id: "rich",           label: "💰 100+ coin day" },
+      { id: "five-star",      label: "⭐ 5-star reputation" },
+      { id: "tax-survivor",   label: "🔥 Survived the sugar tax" },
+      { id: "monopolist",     label: "👑 Became monopolist" },
+      { id: "lerner-master",  label: "🧮 Half-pass-through nailed" },
+      { id: "bankruptcy",     label: "💸 Recovered from bankruptcy" },
+      { id: "graduate",       label: "🎓 Master Baker certification" },
+      { id: "perfect-day",    label: "💯 Aced a day (≥95%)" },
+      { id: "streak-3",       label: "🔥 3-day excellence streak" },
+      { id: "hell-survivor",  label: "👹 Survived Hell Day 1" },
+      { id: "duopoly-master", label: "♟️ Aced Cournot night" },
+      { id: "hell-master",    label: "🔱 Hell Market certification" },
     ];
 
     const state = State.get();
     const b = state.bakery;
+    const hellUnlocked = !!b.graduated;
 
-    // Dashboard
+    // Dashboard — shows both Vanilla and Hell stats when Hell is unlocked
     const dash = document.getElementById("dashboard");
     dash.innerHTML = `
-      <div class="kpi"><span class="label">Day</span><span class="value">${b.day}/10</span></div>
+      <div class="kpi"><span class="label">🏪 Vanilla Day</span><span class="value">${b.day}/10</span></div>
       <div class="kpi"><span class="label">💰 Cash</span><span class="value ${b.cash < 0 ? "bad" : b.cash > 200 ? "good" : ""}">${b.cash.toFixed(0)}</span></div>
       <div class="kpi"><span class="label">⭐ Rep</span><span class="value">${b.reputation.toFixed(1)}/5</span></div>
-      <div class="kpi"><span class="label">📅 Days Done</span><span class="value">${b.daysCompleted.length}/10</span></div>
+      ${hellUnlocked ? `
+        <div class="kpi"><span class="label">🔱 Hell Day</span><span class="value">${b.hellDay}/14</span></div>
+        <div class="kpi"><span class="label">💀 Hell Cash</span><span class="value ${b.hellCash < 0 ? "bad" : b.hellCash > 400 ? "good" : ""}">${b.hellCash.toFixed(0)}</span></div>
+      ` : ""}
       <div class="kpi"><span class="label">🏆 Badges</span><span class="value">${b.achievements.length}/${ACHIEVEMENTS.length}</span></div>
     `;
 
-    // Campaign tile CTA
+    // Vanilla campaign tile CTA
     const cta = document.getElementById("campaign-cta");
     if (b.graduated) {
       cta.textContent = "🎓 Graduated — replay?";
-      document.getElementById("campaign-sub").textContent = "You earned the Master Baker certificate. The Royal Examination Room awaits.";
+      document.getElementById("campaign-sub").textContent = "You earned the Master Baker certificate. Hell Market is now unlocked below.";
     } else if (b.day === 1 && b.daysCompleted.length === 0) {
       cta.textContent = "▶ Start Day 1";
     } else {
@@ -109,6 +124,27 @@
       const lastLog = b.log[0];
       if (lastLog) {
         document.getElementById("campaign-sub").innerHTML = `Last entry: <strong>Day ${lastLog.day} — ${lastLog.title}</strong>. ${lastLog.summary.replace(/<[^>]+>/g, '')}`;
+      }
+    }
+
+    // Hell tile CTA + unlock state
+    const hellTile = document.getElementById("hell-tile");
+    const hellCta  = document.getElementById("hell-cta");
+    const hellSub  = document.getElementById("hell-sub");
+    if (!hellUnlocked) {
+      hellTile.classList.add("locked");
+      hellTile.removeAttribute("href");
+      hellCta.textContent = "🔒 Graduate Vanilla Day 10 first";
+    } else if (b.hellGraduated) {
+      hellCta.textContent = "🔱 Hell Master — replay?";
+      hellSub.textContent = "You have survived all 14 days of Hell Market. The Royal Examination holds no terrors for you now.";
+    } else if (b.hellDay === 1 && b.hellDaysCompleted.length === 0) {
+      hellCta.textContent = "▶ Begin Hell Day 1";
+    } else {
+      hellCta.textContent = `▶ Continue Hell — Day ${b.hellDay}`;
+      const lastHell = b.hellLog[0];
+      if (lastHell) {
+        hellSub.innerHTML = `Last entry: <strong>Hell Day ${lastHell.day} — ${lastHell.title}</strong>. Phase scores: ${(lastHell.phaseScores || []).map(s => Math.round(s)).join(" · ")}`;
       }
     }
 
@@ -129,20 +165,24 @@
       mapEl.appendChild(a);
     });
 
-    // Recent activity
+    // Recent activity — merged Vanilla + Hell
     const rec = document.getElementById("record");
     const lastMock = state.mockHistory[0];
-    if (b.log.length === 0 && !lastMock) {
+    const merged = [
+      ...(b.log || []).map(e => ({ ...e, mode: "vanilla" })),
+      ...(b.hellLog || []).map(e => ({ ...e, mode: "hell" })),
+    ].sort((x, y) => (y.when || "").localeCompare(x.when || "")).slice(0, 4);
+    if (merged.length === 0 && !lastMock) {
       rec.innerHTML = `<p><em>No campaign days or exam attempts yet. Pick up your father's letter above.</em></p>`;
     } else {
-      const recentLog = b.log.slice(0, 3).map(e => `
+      const recentLog = merged.map(e => `
         <div class="logbook-entry ${e.cashDelta >= 0 ? "win" : "fail"}">
-          <div class="day">Day ${e.day} — ${e.title}</div>
-          <div class="summary">${e.summary.replace(/<[^>]+>/g, '')}</div>
+          <div class="day">${e.mode === "hell" ? "🔱 Hell" : "🏪 Vanilla"} Day ${e.day} — ${e.title}</div>
+          <div class="summary">${(e.summary || "").replace(/<[^>]+>/g, '')}</div>
         </div>
       `).join("");
       rec.innerHTML = `
-        ${recentLog || ""}
+        ${recentLog}
         ${lastMock ? `<p style="margin-top:10px"><strong>Latest Royal Exam (${lastMock.date}):</strong> MCQs ${lastMock.mcq}/15 · Essay ${lastMock.essay}/100 · Total ${lastMock.total}/100</p>` : ""}
       `;
     }

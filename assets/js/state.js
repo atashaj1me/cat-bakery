@@ -1,21 +1,35 @@
 // state.js — localStorage-backed progress tracker.
 //
-// Two layers of state in one localStorage key:
+// Three slices share one key:
 //   1) Reference-mode (chapters/MCQs/mock) — original v1 shape.
-//   2) Campaign-mode (the Master Baker daily run) — added in v2.
+//   2) Vanilla campaign — added in v2 (bakery.*).
+//   3) Hell Market campaign — added in v3 (bakery.hell*).
 
-const KEY = "catBakery.v2";
-const LEGACY_KEY = "catBakery.v1";
+const KEY = "catBakery.v3";
+const V2_KEY = "catBakery.v2";
+const V1_KEY = "catBakery.v1";
 
 const DEFAULT_BAKERY = {
+  // ---- Vanilla ----
   cash: 100,
-  reputation: 3.0,         // 0..5 stars
-  day: 1,                  // 1..10
-  daysCompleted: [],       // [day numbers]
-  log: [],                 // [{day, title, yourAnswer, correctAnswer, cashDelta, repDelta, summary}]
-  achievements: [],        // [achievement ids]
+  reputation: 3.0,
+  day: 1,
+  daysCompleted: [],
+  log: [],
+  achievements: [],
   loansTaken: 0,
   graduated: false,
+  // ---- Mode flag ----
+  mode: "vanilla",
+  // ---- Hell ----
+  hellCash: 200,
+  hellReputation: 3.0,
+  hellDay: 1,
+  hellDaysCompleted: [],
+  hellLog: [],
+  hellGraduated: false,
+  hellInProgress: null,    // {day, phaseIdx, phaseResults: [{score, summary}]}
+  hellLoansTaken: 0,
 };
 
 const DEFAULT_STATE = {
@@ -31,10 +45,19 @@ function read() {
   try {
     let raw = localStorage.getItem(KEY);
     if (!raw) {
-      // Migrate v1 → v2 if present.
-      const legacy = localStorage.getItem(LEGACY_KEY);
-      if (legacy) {
-        const v1 = JSON.parse(legacy);
+      // Migrate v2 → v3 first (preserves chapter scores + vanilla state)
+      const v2raw = localStorage.getItem(V2_KEY);
+      if (v2raw) {
+        const v2 = JSON.parse(v2raw);
+        const migrated = { ...structuredClone(DEFAULT_STATE), ...v2,
+          bakery: { ...structuredClone(DEFAULT_BAKERY), ...(v2.bakery || {}) } };
+        localStorage.setItem(KEY, JSON.stringify(migrated));
+        return migrated;
+      }
+      // Else try v1 → v3 (preserves chapter scores only)
+      const v1raw = localStorage.getItem(V1_KEY);
+      if (v1raw) {
+        const v1 = JSON.parse(v1raw);
         const migrated = { ...structuredClone(DEFAULT_STATE), ...v1 };
         migrated.bakery = structuredClone(DEFAULT_BAKERY);
         localStorage.setItem(KEY, JSON.stringify(migrated));
@@ -43,7 +66,6 @@ function read() {
       return structuredClone(DEFAULT_STATE);
     }
     const parsed = JSON.parse(raw);
-    // Make sure the bakery slice exists for older v2 saves.
     return { ...structuredClone(DEFAULT_STATE), ...parsed,
       bakery: { ...structuredClone(DEFAULT_BAKERY), ...(parsed.bakery || {}) } };
   } catch (_) {
@@ -58,9 +80,7 @@ function write(state) {
 export const State = {
   get: () => read(),
 
-  isUnlocked(id) {
-    return !!read().unlocked[id];
-  },
+  isUnlocked(id) { return !!read().unlocked[id]; },
 
   unlock(id) {
     const s = read();
@@ -68,10 +88,6 @@ export const State = {
     write(s);
   },
 
-  /**
-   * Record a chapter completion. Unlocks the next chapter on pass (>= 60%).
-   * For chapter 6, unlocks the mock exam.
-   */
   recordChapter(chapterId, simPct, mcqPct) {
     const s = read();
     const total = Math.round(0.5 * simPct + 0.5 * mcqPct);
@@ -116,7 +132,7 @@ export const State = {
     }
   },
 
-  // ----- bakery slice -----
+  // ----- bakery: shared -----
   bakery() { return read().bakery; },
 
   saveBakery(b) {
@@ -125,7 +141,13 @@ export const State = {
     write(s);
   },
 
-  // Apply a daily outcome to bakery state.
+  setMode(mode) {
+    const s = read();
+    s.bakery.mode = mode;
+    write(s);
+  },
+
+  // ----- bakery: Vanilla -----
   applyDayResult({ day, title, yourAnswer, correctAnswer, cashDelta, repDelta, summary }) {
     const s = read();
     s.bakery.cash = Math.round((s.bakery.cash + cashDelta) * 100) / 100;
@@ -136,7 +158,7 @@ export const State = {
     if (s.bakery.day < day + 1 && day < 10) s.bakery.day = day + 1;
     if (day === 10) {
       s.bakery.graduated = true;
-      s.unlocked.mock = true;   // graduating campaigns unlock the mock exam
+      s.unlocked.mock = true;
     }
     write(s);
     return s.bakery;
@@ -161,15 +183,66 @@ export const State = {
 
   resetBakery() {
     const s = read();
-    s.bakery = structuredClone(DEFAULT_BAKERY);
+    s.bakery = { ...structuredClone(DEFAULT_BAKERY), mode: s.bakery.mode };
+    write(s);
+  },
+
+  // ----- bakery: Hell Market -----
+  saveHellProgress(progress) {
+    // progress = { day, phaseIdx, phaseResults }
+    const s = read();
+    s.bakery.hellInProgress = progress;
+    write(s);
+  },
+
+  clearHellProgress() {
+    const s = read();
+    s.bakery.hellInProgress = null;
+    write(s);
+  },
+
+  applyHellDayResult({ day, title, cashDelta, repDelta, summary, phaseScores }) {
+    const s = read();
+    s.bakery.hellCash = Math.round((s.bakery.hellCash + cashDelta) * 100) / 100;
+    s.bakery.hellReputation = Math.max(0, Math.min(5, Math.round((s.bakery.hellReputation + repDelta) * 10) / 10));
+    if (!s.bakery.hellDaysCompleted.includes(day)) s.bakery.hellDaysCompleted.push(day);
+    s.bakery.hellLog.unshift({ day, title, cashDelta, repDelta, summary, phaseScores, when: new Date().toISOString().slice(0, 16).replace("T", " ") });
+    s.bakery.hellLog = s.bakery.hellLog.slice(0, 30);
+    if (s.bakery.hellDay < day + 1 && day < 14) s.bakery.hellDay = day + 1;
+    if (day === 14) {
+      s.bakery.hellGraduated = true;
+    }
+    s.bakery.hellInProgress = null;
+    write(s);
+    return s.bakery;
+  },
+
+  takeHellLoan(amount = 100) {
+    const s = read();
+    s.bakery.hellCash += amount;
+    s.bakery.hellLoansTaken += 1;
+    write(s);
+  },
+
+  resetHell() {
+    const s = read();
+    const baseHell = structuredClone(DEFAULT_BAKERY);
+    s.bakery.hellCash = baseHell.hellCash;
+    s.bakery.hellReputation = baseHell.hellReputation;
+    s.bakery.hellDay = baseHell.hellDay;
+    s.bakery.hellDaysCompleted = [];
+    s.bakery.hellLog = [];
+    s.bakery.hellGraduated = false;
+    s.bakery.hellInProgress = null;
+    s.bakery.hellLoansTaken = 0;
     write(s);
   },
 
   reset() {
     localStorage.removeItem(KEY);
-    localStorage.removeItem(LEGACY_KEY);
+    localStorage.removeItem(V2_KEY);
+    localStorage.removeItem(V1_KEY);
   },
 };
 
-// expose for debugging in console
 if (typeof window !== "undefined") window.CatBakeryState = State;

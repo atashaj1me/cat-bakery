@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=JetBrains+Mono:wght@400;600&display=swap">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV" crossorigin="anonymous">
-  <link rel="stylesheet" href="../assets/css/style.css?v=3">
+  <link rel="stylesheet" href="../assets/css/style.css?v=4">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ctext y='52' font-size='52'%3E🥐%3C/text%3E%3C/svg%3E">
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" integrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8" crossorigin="anonymous"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" integrity="sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05" crossorigin="anonymous"></script>
@@ -20,9 +20,7 @@
     <header class="topbar"></header>
 
     <div class="progress-track" id="progress"></div>
-
     <div class="scene" id="scene"></div>
-
     <div class="dashboard-strip" id="dashboard"></div>
 
     <div id="day-host"></div>
@@ -35,27 +33,42 @@
   </div>
 
   <script type="module">
-    import { State } from "../assets/js/state.js?v=3";
-    import { DAYS, getDay, flavorLine } from "../assets/js/data/days.js?v=3";
-    import { CATS, purchase } from "../assets/js/data/cats.js?v=3";
+    import { State } from "../assets/js/state.js?v=4";
+    import { DAYS, getDay, flavorLine } from "../assets/js/data/days.js?v=4";
+    import { HELL_DAYS, getHellDay } from "../assets/js/data/days-hell.js?v=4";
+    import { CATS, purchase } from "../assets/js/data/cats.js?v=4";
+
+    // --- mode detection from URL ---
+    const urlParams = new URLSearchParams(window.location.search);
+    const MODE = urlParams.get("mode") === "hell" ? "hell" : "vanilla";
+    const HARD_TOTAL_DAYS = 14;
+    const SOFT_TOTAL_DAYS = 10;
+    const TOTAL_DAYS = MODE === "hell" ? HARD_TOTAL_DAYS : SOFT_TOTAL_DAYS;
+    const DAY_GETTER = MODE === "hell" ? getHellDay : getDay;
+    const DAY_LIST   = MODE === "hell" ? HELL_DAYS  : DAYS;
+
+    State.setMode(MODE);
 
     const ACHIEVEMENTS = [
-      { id: "first-sale",    label: "🥇 First Sale", check: b => b.daysCompleted.length >= 1 },
-      { id: "rich",          label: "💰 100+ coin day", check: (b, last) => last && last.cashDelta >= 100 },
-      { id: "five-star",     label: "⭐ 5-star reputation", check: b => b.reputation >= 4.8 },
-      { id: "tax-survivor",  label: "🔥 Survived the sugar tax", check: b => b.daysCompleted.includes(5) && b.cash > 0 },
-      { id: "monopolist",    label: "👑 Became monopolist", check: b => b.daysCompleted.includes(9) },
-      { id: "lerner-master", label: "🧮 Half-pass-through nailed", check: b => b.daysCompleted.includes(10) },
-      { id: "bankruptcy",    label: "💸 Recovered from bankruptcy", check: b => b.loansTaken >= 1 },
-      { id: "graduate",      label: "🎓 Master Baker certification", check: b => b.graduated },
-      { id: "perfect-day",   label: "💯 Aced a day (≥95%)", check: (b, last) => last && last.repDelta >= 0.25 },
-      { id: "streak-3",      label: "🔥 3-day excellence streak", check: b => computeStreak(b) >= 3 },
+      { id: "first-sale",     label: "🥇 First Sale", check: b => (b.daysCompleted.length + b.hellDaysCompleted.length) >= 1 },
+      { id: "rich",           label: "💰 100+ coin day", check: (b, last) => last && last.cashDelta >= 100 },
+      { id: "five-star",      label: "⭐ 5-star reputation", check: b => b.reputation >= 4.8 || b.hellReputation >= 4.8 },
+      { id: "tax-survivor",   label: "🔥 Survived the sugar tax", check: b => b.daysCompleted.includes(5) && b.cash > 0 },
+      { id: "monopolist",     label: "👑 Became monopolist", check: b => b.daysCompleted.includes(9) },
+      { id: "lerner-master",  label: "🧮 Half-pass-through nailed", check: b => b.daysCompleted.includes(10) },
+      { id: "bankruptcy",     label: "💸 Recovered from bankruptcy", check: b => (b.loansTaken + b.hellLoansTaken) >= 1 },
+      { id: "graduate",       label: "🎓 Master Baker certification", check: b => b.graduated },
+      { id: "perfect-day",    label: "💯 Aced a day (≥95%)", check: (b, last) => last && last.repDelta >= 0.25 },
+      { id: "streak-3",       label: "🔥 3-day excellence streak", check: b => computeStreak(b) >= 3 },
+      { id: "hell-survivor",  label: "👹 Survived Hell Day 1", check: b => b.hellDaysCompleted.includes(1) },
+      { id: "duopoly-master", label: "♟️ Aced Cournot night", check: b => b.hellDaysCompleted.includes(10) },
+      { id: "hell-master",    label: "🔱 Hell Market certification", check: b => b.hellGraduated },
     ];
 
-    // simple streak: consecutive days with repDelta > 0
     function computeStreak(b) {
       let streak = 0;
-      for (const e of b.log) {
+      const log = MODE === "hell" ? (b.hellLog || []) : (b.log || []);
+      for (const e of log) {
         if (e.repDelta > 0) streak += 1;
         else break;
       }
@@ -74,124 +87,64 @@
       }, 4500);
     }
 
-    function renderProgress(b) {
-      const track = document.getElementById("progress");
-      track.innerHTML = "";
-      for (let i = 1; i <= 10; i++) {
-        const pip = document.createElement("div");
-        let cls = "pip";
-        if (b.daysCompleted.includes(i)) cls += " done";
-        else if (i === b.day && !b.graduated) cls += " current";
-        pip.className = cls;
-        pip.title = `Day ${i}` + (b.daysCompleted.includes(i) ? " ✓" : "");
-        track.appendChild(pip);
-      }
-    }
-
-    function renderScene(b) {
-      const day = getDay(b.graduated ? 10 : b.day);
-      const w = day?.weather || { emoji: "🌙", line: "Quiet night at the bakery." };
-      const streak = computeStreak(b);
-      document.getElementById("scene").innerHTML = `
-        <div class="weather">${w.emoji}</div>
-        <div class="scene-text"><span class="accent">${day?.title || "Closed for renovations."}</span><br>${w.line}</div>
-        <div class="streak">🔥 streak ${streak}</div>
-      `;
-    }
-
-    function renderDashboard(b) {
-      document.getElementById("dashboard").innerHTML = `
-        <div class="kpi"><span class="label">Day</span><span class="value">${b.day}/10</span></div>
-        <div class="kpi"><span class="label">💰 Cash</span><span class="value ${b.cash < 0 ? "bad" : b.cash > 200 ? "good" : ""}">${b.cash.toFixed(0)}</span></div>
-        <div class="kpi"><span class="label">⭐ Rep</span><span class="value">${b.reputation.toFixed(1)}/5</span></div>
-        <div class="kpi"><span class="label">🏆 Badges</span><span class="value">${b.achievements.length}/${ACHIEVEMENTS.length}</span></div>
-        <div class="kpi"><span class="label">📚 Loans</span><span class="value">${b.loansTaken}</span></div>
-      `;
-    }
+    // ---- accessors that route based on mode ----
+    function currentDay(b)  { return MODE === "hell" ? b.hellDay : b.day; }
+    function isGraduated(b) { return MODE === "hell" ? b.hellGraduated : b.graduated; }
+    function currentCash(b) { return MODE === "hell" ? b.hellCash : b.cash; }
+    function currentRep(b)  { return MODE === "hell" ? b.hellReputation : b.reputation; }
+    function currentDays(b) { return MODE === "hell" ? b.hellDaysCompleted : b.daysCompleted; }
+    function currentLog(b)  { return MODE === "hell" ? b.hellLog : b.log; }
+    function loanCount(b)   { return MODE === "hell" ? b.hellLoansTaken : b.loansTaken; }
+    function takeLoan()     { return MODE === "hell" ? State.takeHellLoan(100) : State.takeLoan(50); }
 
     function renderHeader(b) {
       const root = document.querySelector("header.topbar");
+      const title = MODE === "hell" ? "🔱 Surviving Hell Market" : "🏪 Master Baker";
+      const crumbs = isGraduated(b) ? "Certified — Royal Examination awaits" : `Day ${currentDay(b)} of ${TOTAL_DAYS}`;
       root.innerHTML = `
         <div>
-          <h1>🏪 Master Baker</h1>
-          <div class="crumbs">${b.graduated ? "Certified — Royal Examination awaits" : `Day ${b.day} of 10`}</div>
+          <h1>${title}</h1>
+          <div class="crumbs">${crumbs}</div>
         </div>
         <a class="home" href="../index.html">← Map</a>
       `;
     }
 
-    function renderDay(b) {
-      const host = document.getElementById("day-host");
-      host.innerHTML = "";
-
-      if (b.graduated) {
-        host.innerHTML = `
-          <div class="consequence-banner win" style="text-align:center; font-size:1.05em;">
-            🎓 <strong>Congratulations, Master Baker.</strong><br>
-            You survived 10 days. The Royal Examiners are ready to certify you.
-            <p style="margin-top:14px;">
-              <a class="bigbtn" style="display:inline-block;" href="final-mock.html">🏛️ Open the Royal Examination Room →</a>
-            </p>
-            <p><small>Want another playthrough?
-              <button class="ghost small" id="restart-btn">Restart campaign</button>
-            </small></p>
-          </div>
-        `;
-        document.getElementById("restart-btn")?.addEventListener("click", () => {
-          if (confirm("Restart the campaign? (Chapter scores are preserved.)")) {
-            State.resetBakery();
-            location.reload();
-          }
-        });
-        return;
+    function renderProgress(b) {
+      const track = document.getElementById("progress");
+      track.className = "progress-track" + (MODE === "hell" ? " hell" : "");
+      track.innerHTML = "";
+      for (let i = 1; i <= TOTAL_DAYS; i++) {
+        const pip = document.createElement("div");
+        let cls = "pip";
+        if (currentDays(b).includes(i)) cls += " done";
+        else if (i === currentDay(b) && !isGraduated(b)) cls += " current";
+        pip.className = cls;
+        pip.title = `Day ${i}` + (currentDays(b).includes(i) ? " ✓" : "");
+        track.appendChild(pip);
       }
+    }
 
-      const day = getDay(b.day);
-      if (!day) {
-        host.innerHTML = `<div class="card">No day data found for day ${b.day}. <a href="../index.html">Back to map</a></div>`;
-        return;
-      }
-
-      const letter = day.letter();
-
-      host.innerHTML = `
-        <h2 style="margin-top:18px;">Day ${day.day} — ${day.title}</h2>
-        <div class="letter">
-          <div class="from">${letter.from}</div>
-          <div class="body">${letter.body}</div>
-        </div>
-        <div class="card">
-          <h3>Your decision</h3>
-          <p style="font-size:0.92em; color:var(--ink-soft); margin-top:-4px;">Fill each field, then press <strong>Enter</strong> or click Send. Tolerance shown beneath each box.</p>
-          ${day.fields.map((f, i) => `
-            <div class="field-row">
-              <div>
-                <label for="f-${f.id}">${f.label}</label>
-                <span class="hint-text">tolerance ±${f.tol}${f.hint ? ` · 🐾 ${f.hint}` : ""}</span>
-              </div>
-              <input id="f-${f.id}" type="number" step="0.01" class="cell" placeholder="number" inputmode="decimal" ${i === 0 ? "autofocus" : ""}>
-            </div>
-          `).join("")}
-          <button id="submit" class="bigbtn">📤 Send my answer to the bakery →</button>
-          <p style="font-size:0.85em; color:var(--muted); margin-top:12px; text-align:center;">
-            Stuck? Open a reference notebook in a new tab —
-            <a target="_blank" rel="noopener" href="${refLink(day.chapterRef.id)}">📚 ${day.chapterRef.label}</a>
-          </p>
-        </div>
-        <div id="consequence"></div>
+    function renderScene(b) {
+      const day = DAY_GETTER(isGraduated(b) ? TOTAL_DAYS : currentDay(b));
+      const w = day?.weather || { emoji: "🌙", line: "Quiet night." };
+      const streak = computeStreak(b);
+      document.getElementById("scene").innerHTML = `
+        <div class="weather">${w.emoji}</div>
+        <div class="scene-text"><span class="accent">${day?.title || "Closed."}</span><br>${w.line}</div>
+        <div class="streak">🔥 streak ${streak}</div>
       `;
+    }
 
-      const submitBtn = document.getElementById("submit");
-      submitBtn.addEventListener("click", () => submit(day, letter));
-      document.querySelectorAll(".field-row input").forEach(inp => {
-        inp.addEventListener("keydown", (e) => {
-          if (e.key === "Enter") { e.preventDefault(); submit(day, letter); }
-        });
-      });
-      const first = document.querySelector(".field-row input");
-      if (first) setTimeout(() => first.focus(), 100);
-
-      typesetMath();
+    function renderDashboard(b) {
+      const earnedAch = ACHIEVEMENTS.filter(a => b.achievements.includes(a.id)).length;
+      document.getElementById("dashboard").innerHTML = `
+        <div class="kpi"><span class="label">Mode</span><span class="value">${MODE === "hell" ? "🔱 Hell" : "🏪 Vanilla"}</span></div>
+        <div class="kpi"><span class="label">Day</span><span class="value">${currentDay(b)}/${TOTAL_DAYS}</span></div>
+        <div class="kpi"><span class="label">💰 Cash</span><span class="value ${currentCash(b) < 0 ? "bad" : currentCash(b) > 300 ? "good" : ""}">${currentCash(b).toFixed(0)}</span></div>
+        <div class="kpi"><span class="label">⭐ Rep</span><span class="value">${currentRep(b).toFixed(1)}/5</span></div>
+        <div class="kpi"><span class="label">🏆 Badges</span><span class="value">${earnedAch}/${ACHIEVEMENTS.length}</span></div>
+      `;
     }
 
     function refLink(chapterId) {
@@ -207,48 +160,106 @@
       return map[chapterId] || "../index.html";
     }
 
-    function typesetMath() {
-      // KaTeX auto-render with $...$ and $$...$$ delimiters
-      if (window.renderMathInElement) {
-        try {
-          window.renderMathInElement(document.body, {
-            delimiters: [
-              { left: "$$", right: "$$", display: true },
-              { left: "$", right: "$", display: false },
-            ],
-            throwOnError: false,
-            errorColor: "#e08c6e",
-          });
-        } catch (e) {
-          console.warn("KaTeX render error:", e);
-        }
-      }
+    function typesetMath(target = document.body) {
+      if (!window.renderMathInElement) return;
+      try {
+        window.renderMathInElement(target, {
+          delimiters: [
+            { left: "$$", right: "$$", display: true },
+            { left: "$", right: "$", display: false },
+          ],
+          throwOnError: false,
+          errorColor: "#e08c6e",
+        });
+      } catch (e) { console.warn("KaTeX:", e); }
     }
 
-    function submit(day, letter) {
+    // ============== VANILLA RENDERER (unchanged from previous) ==============
+    function renderDayVanilla(b) {
+      const host = document.getElementById("day-host");
+      host.innerHTML = "";
+
+      if (b.graduated) {
+        host.innerHTML = `
+          <div class="consequence-banner win" style="text-align:center; font-size:1.05em;">
+            🎓 <strong>Congratulations, Master Baker.</strong><br>
+            You survived 10 days. Hell Market is now unlocked.
+            <p style="margin-top:14px;">
+              <a class="bigbtn" style="display:inline-block;" href="final-mock.html">🏛️ Take the Royal Exam →</a>
+              <a class="bigbtn" style="display:inline-block; background: linear-gradient(180deg,#7a2424,#3a1010); border-color:#5a1a1a; color:#fde6c0;" href="daily.html?mode=hell">🔱 Enter Hell Market →</a>
+            </p>
+            <p><small><button class="ghost small" id="restart-btn">Restart Vanilla campaign</button></small></p>
+          </div>
+        `;
+        document.getElementById("restart-btn")?.addEventListener("click", () => {
+          if (confirm("Restart the Vanilla campaign? (Chapter scores and Hell progress preserved.)")) {
+            State.resetBakery();
+            location.reload();
+          }
+        });
+        return;
+      }
+
+      const day = getDay(b.day);
+      if (!day) { host.innerHTML = `<div class="card">No data for Day ${b.day}.</div>`; return; }
+
+      const letter = day.letter();
+
+      host.innerHTML = `
+        <h2 style="margin-top:18px;">Day ${day.day} — ${day.title}</h2>
+        <div class="letter">
+          <div class="from">${letter.from}</div>
+          <div class="body">${letter.body}</div>
+        </div>
+        <div class="card">
+          <h3>Your decision</h3>
+          <p style="font-size:0.92em; color:var(--ink-soft); margin-top:-4px;">Fill each field, then press <strong>Enter</strong> or click Send.</p>
+          ${day.fields.map((f, i) => `
+            <div class="field-row">
+              <div>
+                <label for="f-${f.id}">${f.label}</label>
+                <span class="hint-text">tolerance ±${f.tol}${f.hint ? ` · 🐾 ${f.hint}` : ""}</span>
+              </div>
+              <input id="f-${f.id}" type="number" step="0.01" class="cell" placeholder="number" inputmode="decimal" ${i === 0 ? "autofocus" : ""}>
+            </div>
+          `).join("")}
+          <button id="submit" class="bigbtn">📤 Send my answer →</button>
+          <p style="font-size:0.85em; color:var(--muted); margin-top:12px; text-align:center;">
+            Stuck? <a target="_blank" rel="noopener" href="${refLink(day.chapterRef.id)}">📚 ${day.chapterRef.label}</a>
+          </p>
+        </div>
+        <div id="consequence"></div>
+      `;
+
+      const btn = document.getElementById("submit");
+      btn.addEventListener("click", () => submitVanilla(day, letter));
+      document.querySelectorAll(".field-row input").forEach(inp => {
+        inp.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); submitVanilla(day, letter); } });
+      });
+      const first = document.querySelector(".field-row input");
+      if (first) setTimeout(() => first.focus(), 100);
+      typesetMath();
+    }
+
+    function submitVanilla(day, letter) {
       const answers = {};
       const missing = [];
       day.fields.forEach(f => {
         const el = document.getElementById("f-" + f.id);
         const v = parseFloat(el.value);
         answers[f.id] = v;
-        if (!isFinite(v)) {
-          missing.push(f.label);
-          el.classList.add("wrong");
-        } else {
-          el.classList.remove("wrong");
-        }
+        if (!isFinite(v)) { missing.push(f.label); el.classList.add("wrong"); }
+        else el.classList.remove("wrong");
       });
       if (missing.length) {
         const c = document.getElementById("consequence");
-        c.innerHTML = `<div class="consequence-banner fail">⚠️ Please fill in: <strong>${missing.join(", ")}</strong>. Type a number then press Enter or click Send.</div>`;
+        c.innerHTML = `<div class="consequence-banner fail">⚠️ Please fill in: <strong>${missing.join(", ")}</strong>.</div>`;
         c.scrollIntoView({ behavior: "smooth", block: "center" });
         return;
       }
 
       const result = day.grade(letter, answers);
 
-      // cat queue cinematic
       const queue = buildQueue(day);
       const queueHTML = queue.map(q => `
         <div class="queue-row">
@@ -263,16 +274,11 @@
       `).join("");
 
       State.applyDayResult({
-        day: day.day,
-        title: day.title,
-        yourAnswer: answers,
-        correctAnswer: result.targets,
-        cashDelta: result.cashDelta,
-        repDelta: result.repDelta,
-        summary: result.summary,
+        day: day.day, title: day.title, yourAnswer: answers,
+        correctAnswer: result.targets, cashDelta: result.cashDelta,
+        repDelta: result.repDelta, summary: result.summary,
       });
 
-      // achievements
       const newState = State.bakery();
       ACHIEVEMENTS.forEach(a => {
         if (!newState.achievements.includes(a.id) && a.check(newState, newState.log[0])) {
@@ -282,31 +288,27 @@
 
       const finalState = State.bakery();
       const bankrupt = finalState.cash < 0;
-
-      const verdictClass = result.score >= 80 ? "win" : result.score >= 50 ? "" : "fail";
-      const verdictTxt = result.score >= 80 ? "Excellent." : result.score >= 50 ? "Workable." : "Painful.";
+      const cls = result.score >= 80 ? "win" : result.score >= 50 ? "" : "fail";
+      const verdict = result.score >= 80 ? "Excellent." : result.score >= 50 ? "Workable." : "Painful.";
 
       const c = document.getElementById("consequence");
       c.innerHTML = `
-        <div class="consequence-banner ${verdictClass}">
-          <strong>${verdictTxt}</strong> Score: ${Math.round(result.score)}/100 ·
-          Cash ${result.cashDelta >= 0 ? "+" : ""}${result.cashDelta} ·
-          Reputation ${result.repDelta >= 0 ? "+" : ""}${result.repDelta.toFixed(1)} ⭐
+        <div class="consequence-banner ${cls}">
+          <strong>${verdict}</strong> Score: ${Math.round(result.score)}/100 · Cash ${result.cashDelta >= 0 ? "+" : ""}${result.cashDelta} · Rep ${result.repDelta >= 0 ? "+" : ""}${result.repDelta.toFixed(1)} ⭐
         </div>
         <div class="card">
           <h3>What actually happened</h3>
           <p>${result.summary}</p>
           ${queueHTML.length ? `<h4 style="margin-top:14px">The day's customers</h4>${queueHTML}` : ""}
         </div>
-        ${bankrupt ? `
-          <div class="consequence-banner fail" style="text-align:center">
-            💸 You are out of coins. The Whiskerton Mutual Cat Bank offers a 50-coin loan.
-            <p style="margin-top:8px;"><button id="loan-btn">Take the 50-coin loan</button></p>
-          </div>` : ""}
+        ${bankrupt ? `<div class="consequence-banner fail" style="text-align:center">💸 Bankrupt. <button id="loan-btn">Take 50-coin loan</button></div>` : ""}
         ${day.day === 10 ? `
           <div class="consequence-banner win" style="text-align:center; margin-top:16px;">
-            🎓 You have completed the campaign. The Royal Examiners await.
-            <p style="margin-top:8px;"><a class="bigbtn" style="display:inline-block;" href="final-mock.html">Take the Royal Exam →</a></p>
+            🎓 Campaign complete! Royal Exam unlocked. 🔱 Hell Market unlocked.
+            <p style="margin-top:8px;">
+              <a class="bigbtn" style="display:inline-block;" href="final-mock.html">Take the Royal Exam →</a>
+              <a class="bigbtn" style="display:inline-block; background: linear-gradient(180deg,#7a2424,#3a1010); border-color:#5a1a1a; color:#fde6c0;" href="daily.html?mode=hell">Enter Hell Market →</a>
+            </p>
           </div>
         ` : `
           <p style="text-align:center; margin-top:18px;">
@@ -315,52 +317,218 @@
         `}
       `;
 
-      const submitBtn = document.getElementById("submit");
-      if (submitBtn) submitBtn.disabled = true;
-      const sleep = document.getElementById("sleep");
-      if (sleep) sleep.addEventListener("click", () => { window.scrollTo({ top: 0, behavior: "smooth" }); render(); });
-      const loanBtn = document.getElementById("loan-btn");
-      if (loanBtn) loanBtn.addEventListener("click", () => { State.takeLoan(50); render(); });
+      const sbtn = document.getElementById("submit"); if (sbtn) sbtn.disabled = true;
+      document.getElementById("sleep")?.addEventListener("click", () => { window.scrollTo({ top: 0, behavior: "smooth" }); render(); });
+      document.getElementById("loan-btn")?.addEventListener("click", () => { State.takeLoan(50); render(); });
 
       renderHeader(finalState); renderDashboard(finalState); renderProgress(finalState); renderScene(finalState); renderLogbook(finalState); renderAchievements(finalState);
       typesetMath();
-
       c.scrollIntoView({ behavior: "smooth", block: "start" });
+      if (result.score >= 90) toast("Cats purring 🐾", "win", `Day ${day.day} mastered`);
+      else if (result.score < 40) toast("Reputation hit. Reference open?", "bad", `Day ${day.day} rough`);
+    }
 
-      // celebratory toast
-      if (result.score >= 90) toast("Cats are purring 🐾", "win", `Day ${day.day} mastered`);
-      else if (result.score < 40) toast("Reputation took a hit. Reference notebook open in new tab?", "bad", `Day ${day.day} — rough day`);
+    // ============== HELL RENDERER (phased) ==============
+    function renderDayHell(b) {
+      const host = document.getElementById("day-host");
+      host.innerHTML = "";
+
+      if (b.hellGraduated) {
+        host.innerHTML = `
+          <div class="consequence-banner win" style="text-align:center; font-size:1.05em;">
+            🔱 <strong>You have survived Hell Market.</strong><br>
+            Master Baker of the deep economics. The exam holds no terrors for you now.
+            <p style="margin-top:14px;">
+              <a class="bigbtn" style="display:inline-block;" href="final-mock.html">🏛️ Take the Royal Exam →</a>
+              <button class="ghost small" id="hell-restart">Restart Hell campaign</button>
+            </p>
+          </div>
+        `;
+        document.getElementById("hell-restart")?.addEventListener("click", () => {
+          if (confirm("Restart Hell Market? (Vanilla & chapter progress preserved.)")) {
+            State.resetHell(); location.reload();
+          }
+        });
+        return;
+      }
+
+      const day = getHellDay(b.hellDay);
+      if (!day) { host.innerHTML = `<div class="card">No data for Hell Day ${b.hellDay}.</div>`; return; }
+
+      // Resume from in-progress, or start fresh
+      const progress = (b.hellInProgress && b.hellInProgress.day === day.day)
+        ? b.hellInProgress
+        : { day: day.day, phaseIdx: 0, phaseResults: [] };
+
+      renderHellPhase(b, day, progress);
+    }
+
+    function renderHellPhase(b, day, progress) {
+      const host = document.getElementById("day-host");
+      const phaseIdx = progress.phaseIdx;
+      const phase = day.phases[phaseIdx];
+      const letter = day.letter();
+      const totalPhases = day.phases.length;
+      const completedScores = progress.phaseResults.map(r => r.score);
+
+      host.innerHTML = `
+        <h2 style="margin-top:18px;">🔱 Hell Day ${day.day} — ${day.title}</h2>
+        <div class="phase-chip-row">
+          ${day.phases.map((p, i) => `
+            <span class="phase-chip ${i < phaseIdx ? "done" : i === phaseIdx ? "active" : ""}">
+              ${i < phaseIdx ? `✓ ${Math.round(completedScores[i] || 0)}` : i === phaseIdx ? "▶" : "○"}&nbsp;${p.title.split("—")[0].trim()}
+            </span>
+          `).join("")}
+        </div>
+        ${phaseIdx === 0 ? `
+          <div class="letter">
+            <div class="from">${letter.from}</div>
+            <div class="body">${letter.body}</div>
+          </div>` : ""}
+        <div class="card">
+          <h3>${phase.title}</h3>
+          ${phase.narrative ? `<p style="color:var(--ink-soft); font-style:italic;">${phase.narrative}</p>` : ""}
+          ${phase.fields.map((f, i) => `
+            <div class="field-row">
+              <div>
+                <label for="hf-${f.id}">${f.label}</label>
+                <span class="hint-text">tolerance ±${f.tol}${f.hint ? ` · 🐾 ${f.hint}` : ""}</span>
+              </div>
+              <input id="hf-${f.id}" type="number" step="0.0001" class="cell" placeholder="number" inputmode="decimal" ${i === 0 ? "autofocus" : ""}>
+            </div>
+          `).join("")}
+          <button id="hsubmit" class="bigbtn">📤 Send Phase ${phaseIdx + 1} →</button>
+          <p style="font-size:0.85em; color:var(--muted); margin-top:12px; text-align:center;">
+            Stuck? <a target="_blank" rel="noopener" href="${refLink(day.chapterRef.id)}">📚 ${day.chapterRef.label}</a>
+          </p>
+        </div>
+        <div id="consequence"></div>
+      `;
+
+      const btn = document.getElementById("hsubmit");
+      btn.addEventListener("click", () => submitHellPhase(b, day, progress, letter));
+      document.querySelectorAll(".field-row input").forEach(inp => {
+        inp.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); submitHellPhase(b, day, progress, letter); } });
+      });
+      const first = document.querySelector(".field-row input");
+      if (first) setTimeout(() => first.focus(), 100);
+      typesetMath();
+    }
+
+    function submitHellPhase(b, day, progress, letter) {
+      const phase = day.phases[progress.phaseIdx];
+      const answers = {};
+      const missing = [];
+      phase.fields.forEach(f => {
+        const el = document.getElementById("hf-" + f.id);
+        const v = parseFloat(el.value);
+        answers[f.id] = v;
+        if (!isFinite(v)) { missing.push(f.label); el.classList.add("wrong"); }
+        else el.classList.remove("wrong");
+      });
+      if (missing.length) {
+        const c = document.getElementById("consequence");
+        c.innerHTML = `<div class="consequence-banner fail">⚠️ Fill: <strong>${missing.join(", ")}</strong>.</div>`;
+        c.scrollIntoView({ behavior: "smooth", block: "center" });
+        return;
+      }
+
+      const prior = progress.phaseResults.map(r => r.targets);
+      const graded = phase.grade(letter, answers, prior);
+      const score = graded.scoreEach(answers);
+
+      progress.phaseResults.push({ key: phase.key, score, targets: graded.targets, summary: graded.summary, answers });
+      progress.phaseIdx += 1;
+      State.saveHellProgress(progress);
+
+      const isLast = progress.phaseIdx >= day.phases.length;
+      const cls = score >= 80 ? "win" : score >= 50 ? "" : "fail";
+      const verdict = score >= 80 ? "Phase aced." : score >= 50 ? "Phase passed." : "Painful phase.";
+
+      const c = document.getElementById("consequence");
+      c.innerHTML = `
+        <div class="consequence-banner ${cls}">
+          <strong>${verdict}</strong> Phase score: ${Math.round(score)}/100
+        </div>
+        <div class="card">
+          <h3>What the books say</h3>
+          <p>${graded.summary}</p>
+        </div>
+        <p style="text-align:center; margin-top:18px;">
+          ${isLast
+            ? `<button id="finalize" class="bigbtn" style="max-width:340px; margin:0 auto;">🌙 Close the day & sleep →</button>`
+            : `<button id="next-phase" class="bigbtn" style="max-width:340px; margin:0 auto;">▶ Continue to Phase ${progress.phaseIdx + 1} →</button>`
+          }
+        </p>
+      `;
+
+      const sbtn = document.getElementById("hsubmit"); if (sbtn) sbtn.disabled = true;
+
+      if (isLast) {
+        document.getElementById("finalize").addEventListener("click", () => finalizeHellDay(day, progress));
+      } else {
+        document.getElementById("next-phase").addEventListener("click", () => {
+          window.scrollTo({ top: 0, behavior: "smooth" });
+          renderHellPhase(State.bakery(), day, progress);
+        });
+      }
+      typesetMath();
+      c.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+
+    function finalizeHellDay(day, progress) {
+      // Aggregate: avg score across phases → cash/rep deltas
+      const scores = progress.phaseResults.map(r => r.score);
+      const avg = scores.reduce((s, x) => s + x, 0) / scores.length;
+      const cashDelta = Math.round((avg - 50) * 1.2);  // -60 .. +60 typical
+      const repDelta = avg >= 90 ? 0.35 : avg >= 70 ? 0.15 : avg >= 50 ? 0 : -0.3;
+
+      const summary = `Phases avg: ${avg.toFixed(0)}/100. ${progress.phaseResults.map((r, i) => `Phase ${i+1}: ${Math.round(r.score)}`).join(" · ")}`;
+
+      State.applyHellDayResult({
+        day: day.day,
+        title: day.title,
+        cashDelta,
+        repDelta,
+        summary,
+        phaseScores: scores,
+      });
+
+      const newState = State.bakery();
+      ACHIEVEMENTS.forEach(a => {
+        if (!newState.achievements.includes(a.id) && a.check(newState, newState.hellLog[0])) {
+          if (State.awardAchievement(a.id)) toast(a.label, "win", "🏆 Achievement!");
+        }
+      });
+
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      render();
+
+      if (avg >= 90) toast("Hell day mastered.", "win", `Hell Day ${day.day} ✓`);
+      else if (avg < 40) toast("Hell hurts. Open a notebook.", "bad", `Hell Day ${day.day}`);
     }
 
     function buildQueue(day) {
       const rosters = {
-        1: ["penny", "engineer"],
-        2: ["penny", "tim"],
-        3: ["penny", "engineer", "tim"],
-        4: ["penny", "engineer", "inspector"],
-        5: ["penny", "pawley", "furrington"],
-        6: ["penny", "cream", "engineer"],
-        7: ["penny", "inspector"],
-        8: ["inspector", "cream", "penny"],
-        9: ["penny", "pawley", "engineer", "tim"],
+        1: ["penny", "engineer"], 2: ["penny", "tim"], 3: ["penny", "engineer", "tim"],
+        4: ["penny", "engineer", "inspector"], 5: ["penny", "pawley", "furrington"],
+        6: ["penny", "cream", "engineer"], 7: ["penny", "inspector"],
+        8: ["inspector", "cream", "penny"], 9: ["penny", "pawley", "engineer", "tim"],
         10: ["penny", "pawley", "cream", "engineer"],
       };
       const ids = rosters[day.day] || ["penny"];
       const prices = { loaf: 3, baguette: 4, croissant: 8, cake: 12, cupcake: 5 };
-      return ids.map(id => {
-        const cat = CATS[id];
-        const result = purchase(cat, prices, day.day < 8);
-        return { cat, result };
-      });
+      return ids.map(id => ({ cat: CATS[id], result: purchase(CATS[id], prices, day.day < 8) }));
     }
 
     function renderLogbook(b) {
       const host = document.getElementById("logbook");
-      if (!b.log.length) {
-        host.innerHTML = `<p style="color:var(--ink-soft); font-style:italic;">No entries yet — your decisions will be recorded here as you play.</p>`;
+      const log = currentLog(b);
+      if (!log.length) {
+        host.innerHTML = `<p style="color:var(--ink-soft); font-style:italic;">No entries yet.</p>`;
         return;
       }
-      host.innerHTML = b.log.map(e => `
+      host.innerHTML = log.map(e => `
         <div class="logbook-entry ${e.cashDelta >= 0 ? "win" : "fail"}">
           <div class="day">Day ${e.day} — ${e.title}</div>
           <div class="summary">${e.summary}</div>
@@ -380,30 +548,32 @@
     function render() {
       try {
         const b = State.bakery();
-        renderHeader(b);
-        renderProgress(b);
-        renderScene(b);
-        renderDashboard(b);
-        renderDay(b);
-        renderLogbook(b);
-        renderAchievements(b);
+        // Hell mode requires vanilla graduation
+        if (MODE === "hell" && !b.graduated) {
+          document.getElementById("day-host").innerHTML = `
+            <div class="errpanel">
+              🔒 <strong>Hell Market is locked.</strong>
+              <br><br>Graduate the Vanilla campaign (complete Day 10) before entering.
+              <br><br><a class="ghost small" href="daily.html" style="display:inline-block; padding:8px 14px; border-radius:6px; text-decoration:none; background:var(--paper); border:1px solid var(--border); color:var(--accent);">← Return to Vanilla</a>
+            </div>`;
+          renderHeader(b); renderDashboard(b); renderProgress(b); renderScene(b);
+          return;
+        }
+        renderHeader(b); renderProgress(b); renderScene(b); renderDashboard(b);
+        if (MODE === "hell") renderDayHell(b);
+        else renderDayVanilla(b);
+        renderLogbook(b); renderAchievements(b);
       } catch (e) {
         document.getElementById("day-host").innerHTML = `
           <div class="errpanel">
-            <strong>Something broke while rendering the campaign:</strong>
-            ${e.message}\n\n${e.stack || ""}
-            <br><br>
-            Try <button class="ghost small" onclick="if(confirm('Reset bakery state?')){CatBakeryState.resetBakery();location.reload();}">Reset bakery</button>
-          </div>
-        `;
+            <strong>Render error:</strong> ${e.message}\n\n${e.stack || ""}
+            <br><br><button class="ghost small" onclick="if(confirm('Reset bakery state?')){CatBakeryState.resetBakery();location.reload();}">Reset bakery</button>
+          </div>`;
       }
     }
 
-    // wait for KaTeX auto-render to be available
     function init() {
-      if (!window.renderMathInElement) {
-        return setTimeout(init, 100);
-      }
+      if (!window.renderMathInElement) return setTimeout(init, 100);
       render();
     }
     init();
