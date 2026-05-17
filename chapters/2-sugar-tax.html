@@ -7,7 +7,10 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=JetBrains+Mono:wght@400;600&display=swap">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV" crossorigin="anonymous">
   <link rel="stylesheet" href="../assets/css/style.css?v=3">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" integrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8" crossorigin="anonymous"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" integrity="sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05" crossorigin="anonymous"></script>
 </head>
 <body>
   <div class="shell">
@@ -305,16 +308,16 @@
         mastery({
           chapterId: 2, simPct: combinedSim, mcqPct,
           formulas: [
-            `Tax incidence (consumer share): <span class="formula">d/(b+d)</span> for q = a−bp, q = c+dp`,
-            `DWL = ½·t·Δq ∝ t² (linear D and S) — doubling t quadruples DWL`,
-            `Price-ceiling DWL = ½·(q*−q_s)·(D(q_s)−p_max)`,
-            `Subsidy to clear shortage: subsidy = q_d_at_pmax/d − p_max`,
-            `Quasilinear waiting time: h = (D(q_s) − p_max) / wage`,
+            `Tax incidence (consumer share): $\\frac{d}{b+d}$ for $q = a - b p,\\ q = c + d p$`,
+            `$DWL = \\frac{1}{2} t \\Delta q \\propto t^2$ (linear $D$ and $S$) — doubling $t$ quadruples DWL`,
+            `Price-ceiling $DWL = \\frac{1}{2}(q^* - q_s)\\cdot(D(q_s) - p_{\\max})$`,
+            `Subsidy to clear shortage: $\\text{subsidy} = q_d(p_{\\max})/d - p_{\\max}$`,
+            `Quasilinear waiting time: $h = \\frac{D(q_s) - p_{\\max}}{w_h}$`,
           ],
           traps: [
             `"Statutory = economic incidence" — wrong. Burden is set by elasticity ratio, not by who writes the check.`,
-            `"Doubling tax doubles DWL" — wrong; DWL ∝ t².`,
-            `"Tax shared 50-50 by buyers and sellers" — only if b = d (equal slopes). Otherwise less-elastic side bears more.`,
+            `"Doubling tax doubles DWL" — wrong; $DWL \\propto t^2$.`,
+            `"Tax shared 50-50 by buyers and sellers" — only if $b = d$ (equal slopes). Otherwise less-elastic side bears more.`,
           ],
         });
       }

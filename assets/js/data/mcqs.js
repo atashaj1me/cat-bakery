@@ -1,29 +1,44 @@
-// mcqs.js — exam-question bank, transcribed from
-//   Vault/Mock Exams/Final Practice — MCQ keys & explanations.md
-// Each entry: { id, chapter, prompt, options, answer (0-based), explanation, tags }.
+// mcqs.js — exam-question bank with LaTeX-typeset math (KaTeX renders $...$).
+//   Source: Vault/Mock Exams/Final Practice — MCQ keys & explanations.md
+// Each entry: { prompt, options, answer (0-based), explanation }.
 //
-// Chapter MCQs ("ch0".."ch6") are the per-chapter quizzes.
-// `finalMock` is the 15-question final-exam set (mirrors the practice test).
+// Chapter MCQs are the per-chapter quizzes; FINAL_MOCK is the 15-question final.
 
 export const CHAPTER_MCQS = {
   0: [ // Warm-up: pre-midterm (Ch 2–13)
     {
-      prompt: "A cat with Cobb-Douglas utility u(x, y) = x^a · y^b has income I. Which fraction of income does she spend on x?",
-      options: ["a/b", "a/(a+b)", "b/(a+b)", "depends on prices", "1/2"],
+      prompt: "A cat with Cobb-Douglas utility $u(x, y) = x^{\\alpha} \\cdot y^{\\beta}$ has income $I$. Which fraction of income does she spend on $x$?",
+      options: [
+        "$\\dfrac{\\alpha}{\\beta}$",
+        "$\\dfrac{\\alpha}{\\alpha + \\beta}$",
+        "$\\dfrac{\\beta}{\\alpha + \\beta}$",
+        "depends on prices",
+        "$\\dfrac{1}{2}$",
+      ],
       answer: 1,
-      explanation: "Cobb-Douglas yields constant expenditure shares: x* = (a/(a+b))·(I/p_x). The share spent on x is a/(a+b), independent of prices. (PreMidterm Refresh §2a.)",
+      explanation: "Cobb-Douglas yields constant expenditure shares: $x^* = \\frac{\\alpha}{\\alpha+\\beta} \\cdot \\frac{I}{p_x}$. The share spent on $x$ is $\\alpha/(\\alpha+\\beta)$, independent of prices.",
     },
     {
-      prompt: "Linear demand q = a − b·p has...",
-      options: ["constant elasticity along the curve", "constant slope and varying elasticity", "constant slope and constant elasticity", "infinite elasticity at the midpoint"],
+      prompt: "Linear demand $q = a - b\\,p$ has...",
+      options: [
+        "constant elasticity along the curve",
+        "constant slope and varying elasticity",
+        "constant slope and constant elasticity",
+        "infinite elasticity at the midpoint",
+      ],
       answer: 1,
-      explanation: "Linear demand has constant slope (−b) but varying elasticity ε = −b·p/q. ε runs from 0 at p=0 to ∞ at the choke price. Midpoint is unit-elastic. This is a top-3 exam trap.",
+      explanation: "Linear demand has constant slope $-b$ but varying elasticity $\\varepsilon = -b \\cdot p/q$. $\\varepsilon$ runs from $0$ at $p = 0$ to $-\\infty$ at the choke price. Midpoint is unit-elastic. A top-3 exam trap.",
     },
     {
-      prompt: "Bakery production y = a·√L; output sells at p, wage is w. Optimal labor L* equals:",
-      options: ["(a·p/w)²", "(a·p/(2w))²", "a²·p/(2w)", "a·p/w"],
+      prompt: "Bakery production $y = a\\sqrt{L}$; output sells at $p$, wage is $w$. Optimal labor $L^*$ equals:",
+      options: [
+        "$\\left(\\dfrac{a p}{w}\\right)^2$",
+        "$\\left(\\dfrac{a p}{2w}\\right)^2$",
+        "$\\dfrac{a^2 p}{2w}$",
+        "$\\dfrac{a p}{w}$",
+      ],
       answer: 1,
-      explanation: "FOC p·MP_L = w  →  p·a/(2√L) = w  →  √L = a·p/(2w)  →  L* = (a·p/(2w))². (PreMidterm Refresh §7.)",
+      explanation: "FOC $p \\cdot MP_L = w \\Rightarrow p \\cdot \\frac{a}{2\\sqrt{L}} = w \\Rightarrow \\sqrt{L} = \\frac{a p}{2 w} \\Rightarrow L^* = \\left(\\frac{a p}{2 w}\\right)^2$.",
     },
   ],
 
@@ -32,36 +47,36 @@ export const CHAPTER_MCQS = {
       prompt: "Which statement best describes long-run competitive equilibrium?",
       options: [
         "Firms earn positive economic profits",
-        "Price equals minimum average cost",
-        "Price equals minimum AVC",
+        "$P = \\min AC$",
+        "$P = \\min AVC$",
         "Demand is perfectly elastic",
-        "Firms operate at minimum MC",
+        "Firms operate at $\\min MC$",
       ],
       answer: 1,
-      explanation: "Free entry/exit drives π_econ to zero, so P = AC. The firm's FOC P = MC always holds. MC pierces AC at min AC. Hence P = MC = min AC. (Final Practice Q1.)",
+      explanation: "Free entry/exit drives $\\pi_{\\text{econ}} = 0$, so $P = AC$. The firm's FOC $P = MC$ always holds. $MC$ pierces $AC$ at $\\min AC$. Hence $P = MC = \\min AC$.",
     },
     {
       prompt: "The First Welfare Theorem requires which of the following?",
       options: [
         "Externalities are present",
         "All consumers have the same income",
-        "Competitive markets and no externalities/asymmetric info",
+        "Competitive markets and no externalities or asymmetric info",
         "Government intervenes to set efficient prices",
         "Goods are perfectly complementary",
       ],
       answer: 2,
-      explanation: "1st Welfare Theorem: competitive equilibrium is Pareto efficient IF markets are complete, prices are taken as given, and there are no externalities/asymmetric info. Any failure of these breaks the theorem.",
+      explanation: "1st Welfare Theorem: competitive equilibrium is Pareto efficient IF markets are complete, prices are taken as given, and there are no externalities or asymmetric info. Any failure of these breaks the theorem.",
     },
     {
       prompt: "In long-run competitive equilibrium, firms produce at the quantity where:",
       options: [
-        "Marginal revenue equals marginal cost only",
-        "Average cost is at its minimum",
-        "Marginal cost is at its minimum",
+        "$MR = MC$ only",
+        "$AC$ is at its minimum",
+        "$MC$ is at its minimum",
         "Demand crosses supply only",
       ],
       answer: 1,
-      explanation: "In LR, P = min AC, and the firm produces at the quantity where AC is minimized. MC = AC at that point.",
+      explanation: "In LR, $P = \\min AC$, and the firm produces at the quantity where $AC$ is minimized. $MC = AC$ at that point.",
     },
   ],
 
@@ -76,19 +91,29 @@ export const CHAPTER_MCQS = {
         "Tax revenue collected by the government",
       ],
       answer: 2,
-      explanation: "Statutory ≠ economic incidence. Statutory = who writes the check. Economic = who bears the burden, determined by relative elasticities. Independent of statutory assignment. (Final Practice Q9.)",
+      explanation: "Statutory $\\neq$ economic incidence. Statutory $=$ who writes the check. Economic $=$ who bears the burden, determined by relative elasticities.",
     },
     {
       prompt: "Doubling a per-unit tax on a market with linear demand and supply produces a DWL that is:",
-      options: ["roughly double", "more than twice (about 4×)", "unchanged", "halved"],
+      options: [
+        "roughly double",
+        "more than twice (about $4\\times$)",
+        "unchanged",
+        "halved",
+      ],
       answer: 1,
-      explanation: "DWL = ½·t·Δq, where Δq is itself proportional to t (linear curves). So DWL ∝ t². Doubling t roughly quadruples DWL. (Final Practice Q12.)",
+      explanation: "$DWL = \\frac{1}{2} \\cdot t \\cdot \\Delta q$, where $\\Delta q$ is itself proportional to $t$ (linear curves). So $DWL \\propto t^2$. Doubling $t$ roughly quadruples DWL.",
     },
     {
-      prompt: "Demand q = 20 − p, supply q = p. A $4 tax on producers. Consumer price p_c and producer price p_s are:",
-      options: ["p_c = 12, p_s = 8", "p_c = 14, p_s = 10", "p_c = 10, p_s = 6", "p_c = 16, p_s = 12"],
+      prompt: "Demand $q = 20 - p$, supply $q = p$. A $\\$4$ tax on producers. Consumer price $p_c$ and producer price $p_s$ are:",
+      options: [
+        "$p_c = 12,\\ p_s = 8$",
+        "$p_c = 14,\\ p_s = 10$",
+        "$p_c = 10,\\ p_s = 6$",
+        "$p_c = 16,\\ p_s = 12$",
+      ],
       answer: 0,
-      explanation: "Pre-tax equilibrium: 20 − p = p → p* = 10, q* = 10. After tax t = 4: p_c = (a + d·t)/(b + d) = (20 + 4)/2 = 12. p_s = 12 − 4 = 8. Equal slopes ⇒ 50-50 split.",
+      explanation: "Pre-tax: $20 - p = p \\Rightarrow p^* = 10,\\ q^* = 10$. After tax $t = 4$: $p_c = \\frac{a + d t}{b + d} = \\frac{20 + 4}{2} = 12$. $p_s = p_c - t = 8$. Equal slopes $\\Rightarrow$ 50-50 split.",
     },
   ],
 
@@ -96,24 +121,24 @@ export const CHAPTER_MCQS = {
     {
       prompt: "Under a tariff imposed by an importing country, government tariff revenue equals:",
       options: [
-        "tariff × domestic production",
-        "tariff × imports under the tariff",
-        "tariff × consumption under free trade",
-        "tariff × (consumption − production at world price)",
+        "$t \\times$ domestic production",
+        "$t \\times$ imports under the tariff",
+        "$t \\times$ consumption under free trade",
+        "$t \\times (\\text{consumption} - \\text{production at world price})$",
       ],
       answer: 1,
-      explanation: "Tariff revenue = t × Q_imports_under_tariff (the rectangle in the importer's diagram between world price and tariff-distorted domestic price, over the imported quantity).",
+      explanation: "Tariff revenue $= t \\times Q_{\\text{imports under tariff}}$ — the rectangle in the importer's diagram between world price and tariff-distorted domestic price, over the imported quantity.",
     },
     {
       prompt: "Compared to free trade, a tariff in the importing country results in:",
       options: [
-        "Higher consumer surplus, lower producer surplus",
-        "Lower consumer surplus, higher producer surplus, government revenue, net loss to country",
+        "Higher CS, lower PS",
+        "Lower CS, higher PS, government revenue, net loss to country",
         "Higher total surplus due to government revenue",
         "No change to deadweight loss",
       ],
       answer: 1,
-      explanation: "Tariff raises domestic price in importer → consumers lose, domestic producers gain, government collects revenue, but net is a loss (two DWL triangles: production distortion + consumption distortion).",
+      explanation: "Tariff raises domestic price in importer: consumers lose, domestic producers gain, government collects revenue, but net is a loss (two DWL triangles: production distortion + consumption distortion).",
     },
     {
       prompt: "In the standard two-country tariff diagram (importer levies tariff), the exporter:",
@@ -124,7 +149,7 @@ export const CHAPTER_MCQS = {
         "Is unaffected by the tariff",
       ],
       answer: 2,
-      explanation: "Importer collects tariff revenue, NOT exporter. Exporter's domestic price falls (or its exports shrink), so its producers lose vs free trade. They're still better off than autarky as long as some trade continues.",
+      explanation: "Importer collects tariff revenue, NOT exporter. Exporter's domestic price falls (or its exports shrink), so its producers lose vs free trade. They are still better off than autarky as long as some trade continues.",
     },
   ],
 
@@ -138,24 +163,29 @@ export const CHAPTER_MCQS = {
         "Maximizes social surplus",
       ],
       answer: 1,
-      explanation: "When PMC < SMC (production imposes uncompensated cost on others), the private market overproduces relative to the socially efficient quantity.",
+      explanation: "When $PMC < SMC$ (production imposes uncompensated cost on others), the private market overproduces relative to the socially efficient quantity.",
     },
     {
       prompt: "A Pigouvian tax is designed to:",
       options: [
         "Raise government revenue to fund enforcement",
-        "Equal the marginal external cost so private cost = social cost",
+        "Equal the marginal external cost so private cost $=$ social cost",
         "Eliminate the externality completely",
         "Punish polluters with a fine",
       ],
       answer: 1,
-      explanation: "Pigouvian tax = MEC (marginal external cost) at the social optimum. It internalizes the externality. Revenue is a side-effect, not the goal. (Final Practice Q3.)",
+      explanation: "Pigouvian tax $t^* = MEC$ (marginal external cost) at the social optimum. It internalizes the externality. Revenue is a side-effect, not the goal.",
     },
     {
-      prompt: "Consider u(d) = 8d − d² − 2h with h = d (i.e. driving causes one-for-one harm). Nash and social driving levels are:",
-      options: ["d_N = 4, d_S = 3", "d_N = 3, d_S = 4", "d_N = 4, d_S = 4", "d_N = 2, d_S = 1"],
+      prompt: "Consider $u(d) = 8d - d^2 - 2h$ with $h = d$ (driving causes one-for-one harm). Nash and social driving levels are:",
+      options: [
+        "$d_N = 4,\\ d_S = 3$",
+        "$d_N = 3,\\ d_S = 4$",
+        "$d_N = 4,\\ d_S = 4$",
+        "$d_N = 2,\\ d_S = 1$",
+      ],
       answer: 0,
-      explanation: "Nash (treats h as constant): 8 − 2d = 0 → d_N = 4. Social (h = d): u = 6d − d², 6 − 2d = 0 → d_S = 3. Pigouvian tax = 2 closes the gap. (Final Practice Q5.)",
+      explanation: "Nash (treats $h$ as constant): $8 - 2d = 0 \\Rightarrow d_N = 4$. Social ($h = d$): $u = 6d - d^2,\\ 6 - 2d = 0 \\Rightarrow d_S = 3$. Pigouvian tax $= 2$ closes the gap.",
     },
   ],
 
@@ -170,7 +200,7 @@ export const CHAPTER_MCQS = {
         "Government regulates premiums",
       ],
       answer: 3,
-      explanation: "The pooling premium is set at the population average. Low-risk types find it overpriced and exit. Pool concentrates in high-risk → premium rises → more low-risk exit → unraveling. (Final Practice Q13.)",
+      explanation: "The pooling premium is set at the population average. Low-risk types find it overpriced and exit. Pool concentrates in high-risk $\\Rightarrow$ premium rises $\\Rightarrow$ more low-risk exit $\\Rightarrow$ unraveling.",
     },
     {
       prompt: "In Akerlof's lemons market, equilibrium tends to feature:",
@@ -192,33 +222,43 @@ export const CHAPTER_MCQS = {
         "Employers can directly observe productivity",
       ],
       answer: 1,
-      explanation: "Spence-signaling separating equilibrium requires the signal cost to differ across types — specifically cheaper for the high-type. Otherwise low-types mimic the signal and it conveys no information.",
+      explanation: "A Spence separating equilibrium requires signal cost to differ across types — specifically cheaper for the high-type. Otherwise low-types mimic the signal and it conveys no information.",
     },
   ],
 
   6: [ // Ch 23 — Monopoly
     {
-      prompt: "A monopolist faces constant elasticity ε = −3 and MC = $1. The profit-maximizing price is:",
-      options: ["$1.50", "$3", "$1.33", "$2"],
-      answer: 0,
-      explanation: "p = MC / (1 − 1/|ε|) = 1 / (1 − 1/3) = 1 / (2/3) = $1.50. (Final Practice Q14; Lerner index L = 1/|ε|.)",
-    },
-    {
-      prompt: "A monopolist with linear demand p = 40 − q and MC = 9 faces a per-unit tax of $8. How much does the monopoly price increase?",
-      options: ["By $8 (full pass-through)", "By $4 (half pass-through)", "By $2", "It falls"],
-      answer: 1,
-      explanation: "Pre-tax: MR = 40 − 2q = 9 → q = 15.5, p = 24.5. Post-tax MC = 17: q = 11.5, p = 28.5. Δp = 4 = t/2. With linear demand, monopolist passes through half the tax. (Final Practice Q7.)",
-    },
-    {
-      prompt: "Under 3rd-degree price discrimination across two markets with constant MC, the monopolist sets:",
+      prompt: "A monopolist faces constant elasticity $\\varepsilon = -3$ and $MC = \\$1$. The profit-maximizing price is:",
       options: [
-        "Equal prices in both markets",
-        "Equal MR in both markets (so higher price where demand is less elastic)",
-        "Equal quantities in both markets",
-        "Price equal to MC in each market",
+        "$\\$1.50$",
+        "$\\$3$",
+        "$\\$1.33$",
+        "$\\$2$",
+      ],
+      answer: 0,
+      explanation: "$p = \\dfrac{MC}{1 - 1/|\\varepsilon|} = \\dfrac{1}{1 - 1/3} = \\dfrac{1}{2/3} = \\$1.50$. Lerner index $L = 1/|\\varepsilon|$.",
+    },
+    {
+      prompt: "A monopolist with linear demand $p = 40 - q$ and $MC = 9$ faces a per-unit tax of $\\$8$. How much does the monopoly price increase?",
+      options: [
+        "By $\\$8$ (full pass-through)",
+        "By $\\$4$ (half pass-through)",
+        "By $\\$2$",
+        "It falls",
       ],
       answer: 1,
-      explanation: "Optimal PD: equate MR across markets to MC. The less elastic market gets a higher price (Lerner intuition).",
+      explanation: "Pre-tax: $MR = 40 - 2q = 9 \\Rightarrow q = 15.5,\\ p = 24.5$. Post-tax $MC = 17$: $q = 11.5,\\ p = 28.5$. $\\Delta p = 4 = t/2$. Linear demand $\\Rightarrow$ half pass-through.",
+    },
+    {
+      prompt: "Under 3rd-degree price discrimination across two markets with constant $MC$, the monopolist sets:",
+      options: [
+        "Equal prices in both markets",
+        "Equal $MR$ in both markets (higher price where demand is less elastic)",
+        "Equal quantities in both markets",
+        "$p = MC$ in each market",
+      ],
+      answer: 1,
+      explanation: "Optimal PD: equate $MR$ across markets to $MC$. The less elastic market gets a higher price (Lerner intuition).",
     },
   ],
 };
@@ -228,14 +268,14 @@ export const FINAL_MOCK = [
   {
     prompt: "In long-run competitive equilibrium, profit-maximizing firms produce where:",
     options: [
-      "Marginal cost equals marginal revenue only",
-      "Price equals minimum average cost",
-      "Price equals minimum AVC",
+      "$MR = MC$ only",
+      "$P = \\min AC$",
+      "$P = \\min AVC$",
       "Demand is perfectly elastic",
-      "Firms operate at minimum MC",
+      "Firms operate at $\\min MC$",
     ],
     answer: 1,
-    explanation: "P = MC = min AC. Zero economic profit, free entry/exit.",
+    explanation: "$P = MC = \\min AC$. Zero economic profit, free entry/exit.",
     tag: "Ch13",
   },
   {
@@ -248,7 +288,7 @@ export const FINAL_MOCK = [
       "Perfect substitutes always have interior solutions",
     ],
     answer: 1,
-    explanation: "Quasilinear u(x,y) = v(x) + y ⇒ zero income elasticity on x. Standard model for non-essential, small-share goods.",
+    explanation: "Quasilinear $u(x,y) = v(x) + y \\Rightarrow$ zero income elasticity on $x$. Standard model for non-essential, small-share goods.",
     tag: "Ch4-5",
   },
   {
@@ -261,7 +301,7 @@ export const FINAL_MOCK = [
       "None of the above",
     ],
     answer: 4,
-    explanation: "All four named statements are false. Pigouvian taxes internalize cost; 1st Welfare requires no externalities; trades aren't externalities; positive externality ⇒ underconsumption.",
+    explanation: "All four named statements are false. Pigouvian taxes internalize cost; 1st Welfare requires no externalities; trades are not externalities; positive externality $\\Rightarrow$ underconsumption.",
     tag: "Ch21",
   },
   {
@@ -274,40 +314,45 @@ export const FINAL_MOCK = [
       "Eliminates the shortage",
     ],
     answer: 2,
-    explanation: "Classic logic of collective action: small group of beneficiaries organizes; large group of losers each loses a tiny amount and doesn't.",
+    explanation: "Classic logic of collective action: a small group of beneficiaries organizes; a large group of losers each loses a tiny amount and does not.",
     tag: "Ch18",
   },
   {
-    prompt: "Utility from driving u(d, h) = 8d − d² − 2h, with h = d. Nash and social planner choices are:",
-    options: ["D1 = 4, D2 = 3", "D1 = 3, D2 = 4", "D1 = 4, D2 = 4", "D1 = 8, D2 = 6"],
+    prompt: "Utility from driving $u(d, h) = 8d - d^2 - 2h$, with $h = d$. Nash and social planner choices are:",
+    options: [
+      "$D_1 = 4,\\ D_2 = 3$",
+      "$D_1 = 3,\\ D_2 = 4$",
+      "$D_1 = 4,\\ D_2 = 4$",
+      "$D_1 = 8,\\ D_2 = 6$",
+    ],
     answer: 0,
-    explanation: "Nash holds h fixed: 8 − 2d = 0, d = 4. Social internalizes h=d: u = 6d − d², 6 − 2d = 0, d = 3.",
+    explanation: "Nash holds $h$ fixed: $8 - 2d = 0,\\ d = 4$. Social internalizes $h = d$: $u = 6d - d^2,\\ 6 - 2d = 0,\\ d = 3$.",
     tag: "Ch21",
   },
   {
-    prompt: "Production f(x₁, x₂) = 4·√x₁ + 6·√x₂, prices w₁ = 1, w₂ = 2, p = 4. Optimal output y* equals:",
-    options: ["68", "60", "72", "48"],
+    prompt: "Production $f(x_1, x_2) = 4\\sqrt{x_1} + 6\\sqrt{x_2}$, prices $w_1 = 1,\\ w_2 = 2,\\ p = 4$. Optimal output $y^*$ equals:",
+    options: ["$68$", "$60$", "$72$", "$48$"],
     answer: 0,
-    explanation: "x₁* = (4·4/(2·1))² = 64, x₂* = (4·6/(2·2))² = 36. y = 4·8 + 6·6 = 68.",
+    explanation: "$x_1^* = \\left(\\frac{4 \\cdot 4}{2 \\cdot 1}\\right)^2 = 64,\\ x_2^* = \\left(\\frac{4 \\cdot 6}{2 \\cdot 2}\\right)^2 = 36.\\ y = 4 \\cdot 8 + 6 \\cdot 6 = 68$.",
     tag: "Ch12",
   },
   {
-    prompt: "Linear demand p = 40 − q, monopolist MC = 9. With $8 per-unit tax, by how much does monopoly price increase?",
-    options: ["$8", "$2", "$4", "$0", "$6"],
+    prompt: "Linear demand $p = 40 - q$, monopolist $MC = 9$. With $\\$8$ per-unit tax, by how much does monopoly price increase?",
+    options: ["$\\$8$", "$\\$2$", "$\\$4$", "$\\$0$", "$\\$6$"],
     answer: 2,
-    explanation: "Pre-tax q = 15.5, p = 24.5. Post-tax MC = 17, q = 11.5, p = 28.5. Δp = 4.",
+    explanation: "Pre-tax $q = 15.5,\\ p = 24.5$. Post-tax $MC = 17,\\ q = 11.5,\\ p = 28.5$. $\\Delta p = 4$.",
     tag: "Ch23",
   },
   {
-    prompt: "Monopolist with constant MC = 2 sells in two markets: US (p = 12 − Q/700), England (p = 10 − Q/500). Optimal prices satisfy:",
+    prompt: "Monopolist with constant $MC = 2$ sells in two markets: US ($p = 12 - Q/700$), England ($p = 10 - Q/500$). Optimal prices satisfy:",
     options: [
-      "p_US > p_England by $1",
-      "p_US < p_England by $1",
-      "p_US = p_England",
-      "p_US > p_England by $2",
+      "$p_{US} > p_{Eng}$ by $\\$1$",
+      "$p_{US} < p_{Eng}$ by $\\$1$",
+      "$p_{US} = p_{Eng}$",
+      "$p_{US} > p_{Eng}$ by $\\$2$",
     ],
     answer: 0,
-    explanation: "US: MR = 12 − Q/350 = 2 → Q = 3500, p = 7. England: MR = 10 − Q/250 = 2 → Q = 2000, p = 6. p_US − p_E = +$1.",
+    explanation: "US: $MR = 12 - Q/350 = 2 \\Rightarrow Q = 3500,\\ p = 7$. England: $MR = 10 - Q/250 = 2 \\Rightarrow Q = 2000,\\ p = 6$. $p_{US} - p_{Eng} = +\\$1$.",
     tag: "Ch23",
   },
   {
@@ -320,7 +365,7 @@ export const FINAL_MOCK = [
       "Tax revenue",
     ],
     answer: 2,
-    explanation: "Statutory = legal assignment. Economic = actual burden, determined by elasticities. They are not the same.",
+    explanation: "Statutory $=$ legal assignment. Economic $=$ actual burden, determined by elasticities. They are not the same.",
     tag: "Ch19",
   },
   {
@@ -333,21 +378,32 @@ export const FINAL_MOCK = [
       "Avoid all uncertainty",
     ],
     answer: 3,
-    explanation: "Intertemporal budget: c₁ + c₂/(1+r) = m₁ + m₂/(1+r). Saving and borrowing smooth consumption.",
+    explanation: "Intertemporal budget: $c_1 + \\frac{c_2}{1 + r} = m_1 + \\frac{m_2}{1 + r}$. Saving and borrowing smooth consumption.",
     tag: "Ch3",
   },
   {
-    prompt: "Demand slope 2 (q = a − 2p), supply slope 1 (q = c + p). $4 tax causes consumer price to rise by:",
-    options: ["≈ $2.67 (consumer up >$2)", "$2", "$4", "$0", "$1.33"],
+    prompt: "Demand slope $|dq/dp| = 2$ ($q = a - 2p$), supply slope $|dq/dp| = 1$ ($q = c + p$). A $\\$4$ tax causes the consumer price to:",
+    options: [
+      "Rise by about $\\$2.67$ (consumer up $> \\$2$)",
+      "Rise by $\\$2$",
+      "Rise by $\\$4$",
+      "Stay the same",
+      "Rise by $\\$1.33$",
+    ],
     answer: 0,
-    explanation: "Consumer share = d/(b+d) = 1/(2+1) = 1/3? No: with demand q = a − bp, b = 2; supply q = c + dp, d = 1. Δp_c = (d/(b+d))·t = (1/3)·4 ≈ 1.33. Wait — re-read: less elastic side bears more. Demand slope 2 is more elastic in q-p inverse sense. Per the worked example Δp_c = $2.67. The vault uses |slope of P-on-Q| convention; consumer Δp = $2.67, producer Δp = −$1.33.",
+    explanation: "Consumer share of burden $= \\frac{b}{b+d} \\cdot t$ where $b$ is demand slope and $d$ is supply slope. Here $b = 2,\\ d = 1$, so $\\Delta p_c = \\frac{2}{3} \\cdot 4 \\approx \\$2.67$. Less elastic side bears more.",
     tag: "Ch19",
   },
   {
-    prompt: "Doubling a tax on a market with linear D and S generates:",
-    options: ["Twice the DWL", "More than twice the DWL (~4×)", "Half the DWL", "The same DWL"],
+    prompt: "Doubling a tax on a market with linear $D$ and $S$ generates:",
+    options: [
+      "Twice the DWL",
+      "More than twice the DWL ($\\sim 4\\times$)",
+      "Half the DWL",
+      "The same DWL",
+    ],
     answer: 1,
-    explanation: "DWL ∝ t². Doubling t quadruples DWL.",
+    explanation: "$DWL \\propto t^2$. Doubling $t$ quadruples DWL.",
     tag: "Ch19",
   },
   {
@@ -364,36 +420,24 @@ export const FINAL_MOCK = [
     tag: "Ch22",
   },
   {
-    prompt: "Constant elasticity demand with |ε| = 3 and MC = $1: profit-max monopoly price is:",
-    options: ["$1.50", "$3", "$0.67", "$2"],
+    prompt: "Constant elasticity demand with $|\\varepsilon| = 3$ and $MC = \\$1$: the profit-max monopoly price is:",
+    options: ["$\\$1.50$", "$\\$3$", "$\\$0.67$", "$\\$2$"],
     answer: 0,
-    explanation: "p = MC/(1 − 1/|ε|) = 1/(1 − 1/3) = 1.50.",
+    explanation: "$p = \\dfrac{MC}{1 - 1/|\\varepsilon|} = \\dfrac{1}{1 - 1/3} = \\$1.50$.",
     tag: "Ch23",
   },
   {
-    prompt: "Demand q = 30 − 3p, supply q = 6p. What is the smallest per-unit tax that completely eliminates trade?",
-    options: ["t = 10", "t = 3.33", "t = 3.67", "t = 11.50", "t = 13"],
+    prompt: "Demand $q = 30 - 3p$, supply $q = 6p$. What is the smallest per-unit tax that completely eliminates trade?",
+    options: ["$t = 10$", "$t = 3.33$", "$t = 3.67$", "$t = 11.50$", "$t = 13$"],
     answer: 0,
-    explanation: "Choke price = 30/3 = 10; minimum supply price = 0. Wedge that kills trade = 10 − 0 = $10.",
+    explanation: "Choke price $= 30/3 = 10$; minimum supply price $= 0$. Wedge that kills trade $= 10 - 0 = \\$10$.",
     tag: "Ch19",
   },
 ];
 
 // Map: which chapter does each mock-MCQ remediation point to?
 export const MOCK_REMEDIATION = {
-  0: 1,  // Ch13 → Chapter 1 (covers long-run eq)
-  1: 0,  // Tastes → warm-up
-  2: 4,  // Ch21 → externalities
-  3: 1,  // Ch18 ceiling political-econ → Market Day handles ceilings briefly; closest map = Sugar Tax
-  4: 4,  // Ch21
-  5: 0,  // Ch12 production → warm-up
-  6: 6,  // Ch23 monopoly+tax
-  7: 6,
-  8: 2,  // Ch19 statutory
-  9: 0,  // Ch3 intertemporal → warm-up
-  10: 2,
-  11: 2,
-  12: 5, // Ch22 asym info
-  13: 6,
-  14: 2,
+  0: 1, 1: 0, 2: 4, 3: 1, 4: 4,
+  5: 0, 6: 6, 7: 6, 8: 2, 9: 0,
+  10: 2, 11: 2, 12: 5, 13: 6, 14: 2,
 };

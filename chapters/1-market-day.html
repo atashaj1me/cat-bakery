@@ -7,7 +7,10 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=JetBrains+Mono:wght@400;600&display=swap">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV" crossorigin="anonymous">
   <link rel="stylesheet" href="../assets/css/style.css?v=3">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" integrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8" crossorigin="anonymous"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" integrity="sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05" crossorigin="anonymous"></script>
 </head>
 <body>
   <div class="shell">
@@ -124,10 +127,10 @@
         mastery({
           chapterId: 1, simPct, mcqPct,
           formulas: [
-            `Equilibrium: solve <span class="formula">a − b·p = c + d·p</span> → <span class="formula">p* = (a − c)/(b + d)</span>`,
-            `Long-run competitive eq: <span class="formula">P = MC = min AC</span>, π_econ = 0`,
+            `Equilibrium: solve $a - b p = c + d p \\Rightarrow p^* = \\frac{a - c}{b + d}$`,
+            `Long-run competitive eq: $P = MC = \\min AC$, $\\pi_{\\text{econ}} = 0$`,
             `1st Welfare Theorem: competitive eq is Pareto efficient (with no externalities, no asymmetric info)`,
-            `CS = ½·(p_choke − p)·q_d   ;   PS = ½·(p − p_min)·q_s`,
+            `$CS = \\frac{1}{2}(p_{\\text{choke}} - p) q_d$ &nbsp;;&nbsp; $PS = \\frac{1}{2}(p - p_{\\min}) q_s$`,
           ],
           traps: [
             `"LR equilibrium = P = min MC" — wrong. It's <strong>P = MC = min AC</strong>. MC pierces AC at min AC, so MC equals AC there.`,

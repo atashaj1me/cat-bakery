@@ -3,6 +3,41 @@
 
 import { State } from "./state.js";
 
+/**
+ * Typeset KaTeX math anywhere in the document or in a target element.
+ * Safe to call before KaTeX has loaded (no-op) or multiple times.
+ * Uses $...$ for inline math and $$...$$ for display.
+ */
+export function typesetMath(target = document.body) {
+  if (typeof window === "undefined" || !window.renderMathInElement) return;
+  try {
+    window.renderMathInElement(target, {
+      delimiters: [
+        { left: "$$", right: "$$", display: true },
+        { left: "$", right: "$", display: false },
+      ],
+      throwOnError: false,
+      errorColor: "#e08c6e",
+      ignoredTags: ["script", "noscript", "style", "textarea", "pre", "code"],
+    });
+  } catch (e) {
+    console.warn("KaTeX render error:", e);
+  }
+}
+
+// Schedule a typeset pass when KaTeX finishes loading.
+if (typeof window !== "undefined") {
+  const waitForKatex = () => {
+    if (window.renderMathInElement) typesetMath();
+    else setTimeout(waitForKatex, 100);
+  };
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", waitForKatex);
+  } else {
+    waitForKatex();
+  }
+}
+
 export function header({ num, title }) {
   const root = document.querySelector("header.topbar");
   if (!root) return;
@@ -74,6 +109,7 @@ export function mastery({ chapterId, simPct, mcqPct, formulas = [], traps = [] }
       <a class="home" href="../index.html" style="padding:10px 18px;">Back to the Map →</a>
     </p>
   `;
+  typesetMath(root);
   root.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 

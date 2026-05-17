@@ -3,6 +3,8 @@
 // Each call to renderMCQ(container, q, opts) renders one question.
 // On answer, it returns whether the answer was correct via opts.onAnswer.
 
+import { typesetMath } from "./chapter.js";
+
 export function renderMCQ(container, q, { onAnswer, qIndex = 0, locked = false } = {}) {
   const card = document.createElement("div");
   card.className = "mcq";
@@ -35,12 +37,14 @@ export function renderMCQ(container, q, { onAnswer, qIndex = 0, locked = false }
       expl.className = "explain";
       expl.innerHTML = `<strong>${correct ? "✓ Correct." : "✗ Not quite."}</strong> ${q.explanation}`;
       card.appendChild(expl);
+      typesetMath(expl);
       if (onAnswer) onAnswer(correct, i);
     });
     opts.appendChild(btn);
   });
 
   container.appendChild(card);
+  typesetMath(card);
   return { card };
 }
 
