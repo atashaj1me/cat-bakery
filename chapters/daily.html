@@ -96,21 +96,36 @@
         </div>
         <div class="card">
           <h3>Your decision</h3>
-          ${day.fields.map(f => `
+          <p style="font-size:0.9em; color:var(--ink-soft); margin-top:-4px;">Type a number for each field, then send your answer. The keyboard's Enter key also submits.</p>
+          ${day.fields.map((f, i) => `
             <div class="field-row">
-              <label for="f-${f.id}">${f.label}</label>
-              <input id="f-${f.id}" type="number" step="0.01" class="cell">
+              <div>
+                <label for="f-${f.id}">${f.label}</label>
+                <span class="hint-text">tolerance ±${f.tol}</span>
+              </div>
+              <input id="f-${f.id}" type="number" step="0.01" class="cell" placeholder="e.g. 12.5" inputmode="decimal" ${i === 0 ? "autofocus" : ""}>
             </div>
           `).join("")}
-          <button id="submit" class="bigbtn">Send my answer →</button>
+          <button id="submit" class="bigbtn">📤 Send my answer to the bakery →</button>
+          <p style="font-size:0.85em; color:var(--muted); margin-top:10px; text-align:center;">
+            Stuck? Open the matching reference notebook in a new tab:
+            <a target="_blank" rel="noopener" href="${refLink(day.chapterRef.id)}">📚 ${day.chapterRef.label}</a>
+          </p>
         </div>
-        <p style="text-align:center; margin-top:14px;">
-          <a class="ghost small" target="_blank" rel="noopener" href="${refLink(day.chapterRef.id)}" style="background:var(--paper); border:1px solid var(--border); padding:6px 12px; border-radius:6px; text-decoration:none; color:var(--accent-dark); font-size:0.9em;">📚 Reference: ${day.chapterRef.label}</a>
-        </p>
         <div id="consequence"></div>
       `;
 
-      document.getElementById("submit").addEventListener("click", () => submit(day, letter));
+      // Wire submit + Enter-to-submit
+      const submitBtn = document.getElementById("submit");
+      submitBtn.addEventListener("click", () => submit(day, letter));
+      document.querySelectorAll(".field-row input").forEach(inp => {
+        inp.addEventListener("keydown", (e) => {
+          if (e.key === "Enter") { e.preventDefault(); submit(day, letter); }
+        });
+      });
+      // Focus the first input
+      const first = document.querySelector(".field-row input");
+      if (first) setTimeout(() => first.focus(), 100);
     }
 
     function refLink(chapterId) {
@@ -128,12 +143,22 @@
 
     function submit(day, letter) {
       const answers = {};
+      const missing = [];
       day.fields.forEach(f => {
-        answers[f.id] = parseFloat(document.getElementById("f-" + f.id).value);
+        const v = parseFloat(document.getElementById("f-" + f.id).value);
+        answers[f.id] = v;
+        if (!isFinite(v)) missing.push(f.label);
       });
-      // Block empties:
-      if (Object.values(answers).some(v => !isFinite(v))) {
-        alert("Please fill in every field before submitting.");
+      if (missing.length) {
+        // Inline notice instead of alert — and highlight empty fields
+        day.fields.forEach(f => {
+          const el = document.getElementById("f-" + f.id);
+          if (!isFinite(parseFloat(el.value))) el.classList.add("wrong");
+          else el.classList.remove("wrong");
+        });
+        const c = document.getElementById("consequence");
+        c.innerHTML = `<div class="consequence-banner fail">⚠️ Please fill in: <strong>${missing.join(", ")}</strong>. Type a number then press Enter or click Send.</div>`;
+        c.scrollIntoView({ behavior: "smooth", block: "center" });
         return;
       }
       const result = day.grade(letter, answers);
