@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Bakery Preparation — Cat Society Bakery</title>
+  <link rel="stylesheet" href="../assets/css/style.css">
+</head>
+<body>
+  <div class="shell">
+    <header class="topbar"></header>
+
+    <div id="story"></div>
+
+    <h2>Sim — Hire bakers, set output</h2>
+    <div class="card">
+      <p>Single-input production: <span class="formula">y = a·√L</span>. You hire L cat bakers at wage w. Loaves sell at competitive price p.</p>
+      <div class="controls">
+        <label class="field">
+          <span class="name">Number of bakers, L</span>
+          <input id="L" type="range" min="0" max="200" step="1" value="40">
+          <span class="formula" id="L-val">40</span>
+        </label>
+        <label class="field">
+          <span class="name">Parameters</span>
+          <span class="formula" id="params">a = ?, w = ?, p = ?</span>
+        </label>
+      </div>
+      <div id="readout" style="margin-top:12px"></div>
+      <p style="text-align:center; margin-top:12px;">
+        <button id="check">Lock in production →</button>
+      </p>
+      <p id="sim-result"></p>
+    </div>
+
+    <h2>Three exam-style MCQs</h2>
+    <div id="mcqs"></div>
+
+    <div id="mastery"></div>
+  </div>
+
+  <script type="module">
+    import { header, cat, readout, setReadout, mastery, pctOfOptimum } from "../assets/js/chapter.js";
+    import { profitOneInput } from "../assets/js/econ.js";
+    import { renderMCQSet } from "../assets/js/mcq.js";
+    import { CHAPTER_MCQS } from "../assets/js/data/mcqs.js";
+
+    header({ num: 0, title: "🥖 Bakery Preparation" });
+
+    document.getElementById("story").innerHTML = cat({
+      name: "Apprentice Biscuit",
+      emoji: "🐈",
+      line: "Warming up. Before policy shocks rain on us, let's bake. Pick the labor that maximizes profit — the same √-production setup you'll see on Q6 of the final.",
+    });
+
+    // Randomize parameters per visit (visible).
+    const a = [2, 3, 4, 5][Math.floor(Math.random() * 4)];
+    const w = [1, 2, 3][Math.floor(Math.random() * 3)];
+    const p = [3, 4, 5, 6][Math.floor(Math.random() * 4)];
+    document.getElementById("params").textContent = `a = ${a}, w = ${w}, p = ${p}`;
+
+    const opt = profitOneInput({ a, w, p });
+
+    const ro = document.getElementById("readout");
+    ro.innerHTML = readout([
+      { id: "y", label: "Output y", value: "—" },
+      { id: "rev", label: "Revenue p·y", value: "—" },
+      { id: "cost", label: "Cost w·L", value: "—" },
+      { id: "profit", label: "Profit π", value: "—" },
+    ]);
+
+    const slider = document.getElementById("L");
+    slider.max = Math.ceil(opt.L * 3); // give room to overshoot
+    const lab = document.getElementById("L-val");
+
+    function update() {
+      const L = +slider.value;
+      lab.textContent = `L = ${L}`;
+      const y = a * Math.sqrt(L);
+      const rev = p * y;
+      const cost = w * L;
+      const profit = rev - cost;
+      setReadout("y", y.toFixed(2));
+      setReadout("rev", rev.toFixed(2));
+      setReadout("cost", cost.toFixed(2));
+      setReadout("profit", profit.toFixed(2), profit >= 0 ? "good" : "bad");
+    }
+    slider.addEventListener("input", update);
+    update();
+
+    let simPct = 0, mcqPct = 0, simDone = false, mcqDone = false;
+    const tryFinish = () => {
+      if (simDone && mcqDone) {
+        mastery({
+          chapterId: 0, simPct, mcqPct,
+          formulas: [
+            `Cobb-Douglas demand: <span class="formula">x* = (a/(a+b))·I/p_x</span>`,
+            `Single-input profit max FOC: <span class="formula">p·MP_L = w</span>; if y = a·√L then <span class="formula">L* = (a·p/(2w))²</span>`,
+            `Two-input separable: <span class="formula">x_i* = (a_i·p/(2w_i))²</span>`,
+            `Linear demand q = a − b·p has CONSTANT slope but VARYING elasticity.`,
+          ],
+          traps: [
+            `"Linear demand has constant elasticity" — wrong. It has constant slope. Elasticity varies from 0 (at p=0) to ∞ (at choke price).`,
+          ],
+        });
+      }
+    };
+
+    document.getElementById("check").addEventListener("click", () => {
+      const L = +slider.value;
+      const y = a * Math.sqrt(L);
+      const profit = p * y - w * L;
+      simPct = pctOfOptimum(profit, opt.profit, 0.05);
+      document.getElementById("sim-result").innerHTML = `
+        Your profit: <strong>${profit.toFixed(2)}</strong>.
+        Optimum profit: <strong>${opt.profit.toFixed(2)}</strong> at L* = ${opt.L.toFixed(1)}.
+        Score: <span class="flash ${simPct >= 80 ? "good" : simPct >= 50 ? "warn" : "bad"}">${simPct}%</span>
+      `;
+      simDone = true;
+      tryFinish();
+    });
+
+    renderMCQSet(document.getElementById("mcqs"), CHAPTER_MCQS[0], {
+      onComplete: ({ pct }) => { mcqPct = pct; mcqDone = true; tryFinish(); },
+    });
+  </script>
+</body>
+</html>

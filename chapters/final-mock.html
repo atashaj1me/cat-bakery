@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Final Mock Exam — Cat Society Bakery</title>
+  <link rel="stylesheet" href="../assets/css/style.css">
+</head>
+<body>
+  <div class="shell">
+    <header class="topbar"></header>
+
+    <div id="pre" class="card">
+      <h2>★ The 75-minute Final Mock Exam</h2>
+      <p>Real format. 15 MCQs (60 pts) + 1 essay (40 pts). Timer is enforced. No hints. Best score persists.</p>
+      <p>This mirrors the practice test in <em>Vault/Mock Exams/Final Practice — MCQ keys & explanations.md</em>. Topical distribution: Ch 13 ×1 · Ch 4–5 ×1 · Ch 21 ×2 · Ch 18 ×1 · Ch 12 ×1 · Ch 23 ×3 · Ch 19 ×4 · Ch 3 ×1 · Ch 22 ×1.</p>
+      <p style="text-align:center"><button id="start">Start the exam →</button></p>
+    </div>
+
+    <div id="exam" style="display:none">
+      <div class="timer" id="timer">75:00</div>
+      <h2>Section A — Multiple choice (15 × 4 = 60 pts)</h2>
+      <div id="mcq-list"></div>
+
+      <h2>Section B — Essay (40 pts)</h2>
+      <div id="essay-host"></div>
+
+      <p style="text-align:center; margin-top:20px;">
+        <button id="submit">Submit exam →</button>
+      </p>
+    </div>
+
+    <div id="result"></div>
+  </div>
+
+  <script type="module">
+    import { header } from "../assets/js/chapter.js";
+    import { State } from "../assets/js/state.js";
+    import { renderMCQ } from "../assets/js/mcq.js";
+    import { FINAL_MOCK, MOCK_REMEDIATION } from "../assets/js/data/mcqs.js";
+    import { equilibrium, priceCeiling, subsidyToClear, waitingHours, tariffSurplus } from "../assets/js/econ.js";
+
+    header({ num: "★", title: "Final Mock Exam" });
+
+    const DURATION = 75 * 60;
+    let remaining = DURATION;
+    let timerId = null;
+    let mcqAnswers = new Array(FINAL_MOCK.length).fill(null);
+    let mcqCorrect = new Array(FINAL_MOCK.length).fill(false);
+    let essayPct = 0;
+    let essayGrade = () => 0;
+
+    function fmtTime(s) {
+      const m = Math.floor(s / 60).toString().padStart(2, "0");
+      const ss = (s % 60).toString().padStart(2, "0");
+      return `${m}:${ss}`;
+    }
+
+    function tick() {
+      remaining -= 1;
+      const t = document.getElementById("timer");
+      t.textContent = fmtTime(remaining);
+      if (remaining <= 5 * 60) t.classList.add("warn");
+      if (remaining <= 60) t.classList.add("crit");
+      if (remaining <= 0) {
+        clearInterval(timerId);
+        finalize(true);
+      }
+    }
+
+    document.getElementById("start").addEventListener("click", () => {
+      document.getElementById("pre").style.display = "none";
+      document.getElementById("exam").style.display = "block";
+      buildExam();
+      timerId = setInterval(tick, 1000);
+    });
+
+    function buildExam() {
+      const list = document.getElementById("mcq-list");
+      FINAL_MOCK.forEach((q, idx) => {
+        renderMCQ(list, q, {
+          qIndex: idx,
+          onAnswer: (correct, picked) => {
+            mcqAnswers[idx] = picked;
+            mcqCorrect[idx] = correct;
+          },
+        });
+      });
+
+      buildEssay();
+    }
+
+    // Pick one of the two essays at random.
+    function buildEssay() {
+      const host = document.getElementById("essay-host");
+      const which = Math.random() < 0.5 ? "ceiling" : "tariff";
+
+      if (which === "ceiling") {
+        const a = 26, d = 0.3, pmax = 10, wage = 4; // canonical practice numbers
+        const params = { a, b: 1, c: 0, d };
+        const eq = equilibrium(params);
+        const ceil = priceCeiling({ ...params, pmax });
+        const sub = subsidyToClear({ ...params, pmax });
+        const h = waitingHours({ ...params, pmax, wage });
+
+        const targets = [
+          { label: "p* =", v: eq.p, tol: 0.3 },
+          { label: "q* =", v: eq.q, tol: 0.3 },
+          { label: "Shortage at p_max =", v: ceil.shortage, tol: 0.3 },
+          { label: "DWL of ceiling =", v: ceil.dwl, tol: 1 },
+          { label: "Per-unit subsidy to clear =", v: sub.subsidy, tol: 0.5 },
+          { label: "DWL of subsidy =", v: sub.dwlSubsidy, tol: 3 },
+          { label: "Waiting hours h =", v: h, tol: 0.2 },
+        ];
+
+        host.innerHTML = `
+          <div class="card">
+            <h3>Essay B — Price ceiling welfare (40 pts)</h3>
+            <p>Demand q = 26 − p. Supply q = 0.3·p. Cat Queen sets ceiling p_max = 10. Quasilinear preferences; opportunity cost of waiting = 4 cents/hr.</p>
+            <p>Fill each cell. ±tolerance shown by grading.</p>
+            <div class="steps">
+              ${targets.map((t, i) => `
+                <div class="step">
+                  <div class="prompt"><strong>(${String.fromCharCode(97 + i)})</strong> ${t.label}
+                    <input class="cell" type="number" step="0.01" data-idx="${i}">
+                  </div>
+                </div>
+              `).join("")}
+            </div>
+          </div>
+        `;
+        essayGrade = () => {
+          let correct = 0;
+          targets.forEach((t, i) => {
+            const el = document.querySelector(`#essay-host input[data-idx="${i}"]`);
+            const v = parseFloat(el.value);
+            if (isFinite(v) && Math.abs(v - t.v) <= t.tol) {
+              correct += 1;
+              el.classList.add("correct");
+            } else {
+              el.classList.add("wrong");
+              el.title = `expected ≈ ${t.v.toFixed(2)}`;
+            }
+          });
+          essayPct = Math.round((correct / targets.length) * 100);
+          return { which: "ceiling", correct, total: targets.length, pct: essayPct };
+        };
+      } else {
+        const A = { a: 20, b: 1, c: 0, d: 0.5 };
+        const B = { a: 26, b: 1, c: 0, d: 0.4 };
+        const pStar = 16;
+        const t = 2;
+        const E = tariffSurplus({ marketA: A, marketB: B, pStar, t });
+        const cells = [];
+        ["A", "B"].forEach(mk => {
+          ["noTrade", "freeTrade", "tariff"].forEach(reg => {
+            ["CS", "PS", "Rev", "Total"].forEach(cat => {
+              cells.push({ key: `${mk}-${reg}-${cat}`, v: E[mk][reg][cat], label: `${mk} · ${reg === "noTrade" ? "No trade" : reg === "freeTrade" ? "Free trade" : "Tariff"} · ${cat}` });
+            });
+          });
+        });
+        host.innerHTML = `
+          <div class="card">
+            <h3>Essay B — Tariff surplus table (40 pts)</h3>
+            <p>Market A: q_d = 20 − p, q_s = 0.5·p. Market B: q_d = 26 − p, q_s = 0.4·p. World price p* = ${pStar}. Tariff t = ${t} (small-country: only B's price moves).</p>
+            <p>Fill all 24 cells (CS, PS, Rev, Total for both markets × three regimes).</p>
+            <table class="essay-table">
+              <thead><tr><th>Cell</th><th>Value</th></tr></thead>
+              <tbody>
+                ${cells.map((c, i) => `
+                  <tr>
+                    <td class="row-label">${c.label}</td>
+                    <td><input class="cell" type="number" step="0.01" data-idx="${i}"></td>
+                  </tr>
+                `).join("")}
+              </tbody>
+            </table>
+          </div>
+        `;
+        essayGrade = () => {
+          let correct = 0;
+          cells.forEach((c, i) => {
+            const el = document.querySelector(`#essay-host input[data-idx="${i}"]`);
+            const v = parseFloat(el.value);
+            if (isFinite(v) && Math.abs(v - c.v) <= 0.5) {
+              correct += 1; el.classList.add("correct");
+            } else {
+              el.classList.add("wrong");
+              el.title = `expected ≈ ${c.v.toFixed(2)}`;
+            }
+          });
+          essayPct = Math.round((correct / cells.length) * 100);
+          return { which: "tariff", correct, total: cells.length, pct: essayPct };
+        };
+      }
+    }
+
+    document.getElementById("submit").addEventListener("click", () => {
+      if (!confirm("Submit exam now?")) return;
+      finalize(false);
+    });
+
+    function finalize(autoSubmit) {
+      clearInterval(timerId);
+      const elapsed = DURATION - remaining;
+      const mcqRight = mcqCorrect.filter(Boolean).length;
+      const mcqPts = mcqRight * 4;  // 4 pts each
+      const essayResult = essayGrade();
+      const essayPts = Math.round(essayPct * 40 / 100);
+      const total = mcqPts + essayPts;
+
+      State.recordMock({ mcq: mcqRight, essay: essayPct, total, durationSec: elapsed });
+
+      document.getElementById("exam").style.display = "none";
+      const res = document.getElementById("result");
+      res.innerHTML = `
+        <div class="result-banner ${total >= 70 ? "win" : total >= 50 ? "" : "fail"}">
+          ${autoSubmit ? "⏰ Time up. Auto-submitted." : "Submitted."}
+          <br><strong>MCQs ${mcqRight}/15 (${mcqPts}/60 pts) · Essay ${essayPct}% (${essayPts}/40 pts) · Total ${total}/100</strong>
+          <br><small>Time used: ${fmtTime(elapsed)} of 75:00</small>
+        </div>
+        <h2>Per-question review</h2>
+        <table class="essay-table">
+          <thead><tr><th>Q</th><th>Tag</th><th>Your answer</th><th>Correct</th><th>Practice</th></tr></thead>
+          <tbody>
+            ${FINAL_MOCK.map((q, i) => {
+              const yours = mcqAnswers[i] == null ? "—" : String.fromCharCode(65 + mcqAnswers[i]);
+              const right = String.fromCharCode(65 + q.answer);
+              const ok = mcqCorrect[i];
+              const chap = MOCK_REMEDIATION[i];
+              const link = chap != null
+                ? `<a href="${chap === 0 ? "0-bakery-preparation" : chap === 1 ? "1-market-day" : chap === 2 ? "2-sugar-tax" : chap === 3 ? "3-tariffs" : chap === 4 ? "4-oven-smoke" : chap === 5 ? "5-lemon-loaves" : "6-monopoly"}.html">Chapter ${chap}</a>` : "—";
+              return `<tr style="background:${ok ? "#def0d6" : "#f5d4d4"}">
+                <td>${i + 1}</td>
+                <td>${q.tag}</td>
+                <td>${yours}</td>
+                <td>${right}</td>
+                <td>${ok ? "✓" : link}</td>
+              </tr>`;
+            }).join("")}
+          </tbody>
+        </table>
+        <p style="text-align:center; margin-top:20px;">
+          <a class="home" href="../index.html" style="padding:10px 18px;">← Back to map</a>
+        </p>
+      `;
+      res.scrollIntoView({ behavior: "smooth" });
+    }
+  </script>
+</body>
+</html>

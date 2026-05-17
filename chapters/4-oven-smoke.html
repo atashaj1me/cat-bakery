@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Oven Smoke — Cat Society Bakery</title>
+  <link rel="stylesheet" href="../assets/css/style.css">
+</head>
+<body>
+  <div class="shell">
+    <header class="topbar"></header>
+
+    <div id="story"></div>
+
+    <h2>Sim — Find the Pigouvian tax</h2>
+    <div class="card">
+      <p>Baron Whiskerton's bakery produces smoke (a negative externality). Cat utility from baking d loaves: <span class="formula" id="util">u(d) = α·d − d² − γ·h</span> where h = d (one unit of smoke per loaf). Pick the tax rate t that aligns Nash (private) with the social optimum.</p>
+
+      <div class="controls">
+        <label class="field">
+          <span class="name">α (private demand intercept)</span>
+          <input id="alpha" type="number" value="8" step="0.5" min="2" max="20">
+        </label>
+        <label class="field">
+          <span class="name">γ (marginal external cost)</span>
+          <input id="gamma" type="number" value="2" step="0.5" min="0" max="6">
+        </label>
+        <label class="field full">
+          <span class="name">Pigouvian tax t</span>
+          <input id="t" type="range" min="0" max="6" step="0.25" value="0">
+          <span class="formula" id="t-val">t = 0</span>
+        </label>
+      </div>
+      <div id="readout" style="margin-top:12px"></div>
+      <p style="text-align:center; margin-top:12px;">
+        <button id="check">Lock in tax →</button>
+      </p>
+      <p id="sim-result"></p>
+    </div>
+
+    <h2>Three exam-style MCQs</h2>
+    <div id="mcqs"></div>
+
+    <div id="mastery"></div>
+  </div>
+
+  <script type="module">
+    import { header, cat, readout, setReadout, mastery, pctOfOptimum } from "../assets/js/chapter.js";
+    import { externalityDriving } from "../assets/js/econ.js";
+    import { renderMCQSet } from "../assets/js/mcq.js";
+    import { CHAPTER_MCQS } from "../assets/js/data/mcqs.js";
+
+    header({ num: 4, title: "🏭 Oven Smoke" });
+    document.getElementById("story").innerHTML = cat({
+      name: "Whiskerton Health Authority",
+      emoji: "🐱‍⚕️",
+      line: "The smoke from your ovens hurts the kittens next door. Set a per-loaf tax that internalizes the external cost — the social optimum is where private and social FOCs align.",
+    });
+
+    document.getElementById("readout").innerHTML = readout([
+      { id: "dn", label: "Nash d (private)", value: "—" },
+      { id: "ds", label: "Social optimum d", value: "—" },
+      { id: "dt", label: "d under tax t", value: "—" },
+      { id: "gap", label: "|d_tax − d_social|", value: "—" },
+    ]);
+
+    const alphaEl = document.getElementById("alpha");
+    const gammaEl = document.getElementById("gamma");
+    const tEl = document.getElementById("t");
+    const tLab = document.getElementById("t-val");
+
+    function update() {
+      const alpha = +alphaEl.value;
+      const gamma = +gammaEl.value;
+      const t = +tEl.value;
+      tLab.textContent = `t = ${t}`;
+      const r = externalityDriving({ alpha, gamma });
+      // Under tax t, private FOC: alpha − 2d − t = 0  →  d = (alpha − t)/2
+      const dTax = (alpha - t) / 2;
+      setReadout("dn", r.nash.toFixed(2));
+      setReadout("ds", r.social.toFixed(2), "good");
+      setReadout("dt", dTax.toFixed(2));
+      setReadout("gap", Math.abs(dTax - r.social).toFixed(3),
+                  Math.abs(dTax - r.social) < 0.1 ? "good" : "bad");
+    }
+    [alphaEl, gammaEl, tEl].forEach(el => el.addEventListener("input", update));
+    update();
+
+    let simPct = 0, mcqPct = 0, simDone = false, mcqDone = false;
+    document.getElementById("check").addEventListener("click", () => {
+      const alpha = +alphaEl.value;
+      const gamma = +gammaEl.value;
+      const t = +tEl.value;
+      // Optimal Pigouvian tax = γ
+      simPct = pctOfOptimum(t, gamma, 0.1);
+      document.getElementById("sim-result").innerHTML = `
+        Pigouvian tax should equal γ = <strong>${gamma}</strong>.
+        Your choice: <strong>${t}</strong>.
+        Score: <span class="flash ${simPct >= 80 ? "good" : simPct >= 50 ? "warn" : "bad"}">${simPct}%</span>
+      `;
+      simDone = true; tryFinish();
+    });
+
+    const tryFinish = () => {
+      if (simDone && mcqDone) {
+        mastery({
+          chapterId: 4, simPct, mcqPct,
+          formulas: [
+            `Nash (private): treat h as constant → d_N = α/2`,
+            `Social planner (h = d): d_S = (α − γ)/2`,
+            `Pigouvian tax t* = γ (marginal external cost). Sets private cost = social cost.`,
+            `Negative externality ⇒ private q > social q. Tax reduces by γ.`,
+            `Positive externality ⇒ private q < social q. Subsidy boosts by MEB.`,
+          ],
+          traps: [
+            `"Positive externality means consuming TOO MUCH" — wrong; it means too LITTLE (you ignore the benefit to others).`,
+            `"Pigouvian tax raises revenue for enforcement" — wrong; it internalizes cost. Revenue is a side-effect.`,
+            `"A trade between two people is an externality" — wrong; externalities affect THIRD parties.`,
+            `1st Welfare Theorem fails in the presence of externalities.`,
+          ],
+        });
+      }
+    };
+
+    renderMCQSet(document.getElementById("mcqs"), CHAPTER_MCQS[4], {
+      onComplete: ({ pct }) => { mcqPct = pct; mcqDone = true; tryFinish(); },
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Market Day — Cat Society Bakery</title>
+  <link rel="stylesheet" href="../assets/css/style.css">
+</head>
+<body>
+  <div class="shell">
+    <header class="topbar"></header>
+
+    <div id="story"></div>
+
+    <h2>Sim — Find the market-clearing price</h2>
+    <div class="card">
+      <p>It's market day in Whiskerton Square. Demand: <span class="formula" id="d-eq">q = a − b·p</span>. Supply: <span class="formula" id="s-eq">q = c + d·p</span>. Move the price slider — your job is to <strong>clear the market</strong> (q_d = q_s).</p>
+
+      <div class="controls">
+        <label class="field full">
+          <span class="name">Price (cents per loaf)</span>
+          <input id="p" type="range" min="0" max="40" step="0.5" value="10">
+          <span class="formula" id="p-val">p = 10</span>
+        </label>
+      </div>
+      <div id="readout" style="margin-top:12px"></div>
+      <div id="chart" style="margin-top:14px"></div>
+      <p style="text-align:center; margin-top:12px;">
+        <button id="check">Lock in price →</button>
+      </p>
+      <p id="sim-result"></p>
+    </div>
+
+    <h2>Three exam-style MCQs</h2>
+    <div id="mcqs"></div>
+
+    <div id="mastery"></div>
+  </div>
+
+  <script type="module">
+    import { header, cat, readout, setReadout, mastery, pctOfOptimum } from "../assets/js/chapter.js";
+    import { equilibrium, csLinear, psLinear } from "../assets/js/econ.js";
+    import { Chart } from "../assets/js/graph.js";
+    import { renderMCQSet } from "../assets/js/mcq.js";
+    import { CHAPTER_MCQS } from "../assets/js/data/mcqs.js";
+
+    header({ num: 1, title: "🏪 Market Day" });
+
+    document.getElementById("story").innerHTML = cat({
+      name: "Mayor Mittens",
+      emoji: "🐈‍⬛",
+      line: "Many bakeries, many cats, free entry. Find the price where supply meets demand. At that price, surplus is maximized — that's the First Welfare Theorem in one sentence.",
+    });
+
+    // Random linear D/S
+    const a = 24 + Math.floor(Math.random() * 8); // 24..31
+    const b = 1;
+    const c = 0;
+    const d = 0.5 + Math.random() * 0.6;
+    const params = { a, b, c, d };
+    const eq = equilibrium(params);
+
+    document.getElementById("d-eq").textContent = `q = ${a} − ${b}·p`;
+    document.getElementById("s-eq").textContent = `q = ${d.toFixed(2)}·p`;
+
+    document.getElementById("readout").innerHTML = readout([
+      { id: "qd", label: "q_d at p", value: "—" },
+      { id: "qs", label: "q_s at p", value: "—" },
+      { id: "gap", label: "Gap |qd − qs|", value: "—" },
+      { id: "ts", label: "Total surplus (CS+PS)", value: "—" },
+    ]);
+
+    const slider = document.getElementById("p");
+    slider.max = (a / b).toFixed(0);
+    const lab = document.getElementById("p-val");
+    const chartHost = document.getElementById("chart");
+
+    function drawChart(p) {
+      const ch = new Chart({ qMax: a, pMax: (a / b) * 1.1 });
+      ch.drawAxes({ qLabel: "loaves", pLabel: "price" });
+      ch.drawDemand({ a, b });
+      ch.drawSupply({ c, d });
+      ch.drawPriceLine(p, `p = ${p.toFixed(1)}`, "pmax");
+      // Fill CS and PS at the *traded* quantity = min(qd, qs)
+      const qd = a - b * p;
+      const qs = c + d * p;
+      const traded = Math.min(qd, qs);
+      const pChoke = a / b;
+      // CS triangle under D above p, to the left of traded
+      ch.fillPolygon([[0, p], [0, pChoke], [traded, p + (pChoke - p) * (1 - traded / qd)], [traded, p]], "cs");
+      ch.fillPolygon([[0, 0], [0, p], [traded, p], [traded, (traded - c) / d]], "ps");
+      ch.marker(eq.q, eq.p, ` eq`);
+      ch.mountInto(chartHost);
+    }
+
+    function update() {
+      const p = +slider.value;
+      lab.textContent = `p = ${p}`;
+      const qd = a - b * p;
+      const qs = c + d * p;
+      const gap = Math.abs(qd - qs);
+      const traded = Math.min(qd, qs);
+      const cs = csLinear({ a, b, p });
+      const ps = psLinear({ c, d, p });
+      // CS+PS at non-clearing price uses traded q for both sides
+      const csAdj = 0.5 * (a / b - p) * traded;
+      const psAdj = 0.5 * p * traded;
+      const ts = csAdj + psAdj;
+      setReadout("qd", qd.toFixed(2));
+      setReadout("qs", qs.toFixed(2));
+      setReadout("gap", gap.toFixed(2), gap < 0.5 ? "good" : "bad");
+      setReadout("ts", ts.toFixed(2));
+      drawChart(p);
+    }
+    slider.addEventListener("input", update);
+    update();
+
+    let simPct = 0, mcqPct = 0, simDone = false, mcqDone = false;
+    const tryFinish = () => {
+      if (simDone && mcqDone) {
+        mastery({
+          chapterId: 1, simPct, mcqPct,
+          formulas: [
+            `Equilibrium: solve <span class="formula">a − b·p = c + d·p</span> → <span class="formula">p* = (a − c)/(b + d)</span>`,
+            `Long-run competitive eq: <span class="formula">P = MC = min AC</span>, π_econ = 0`,
+            `1st Welfare Theorem: competitive eq is Pareto efficient (with no externalities, no asymmetric info)`,
+            `CS = ½·(p_choke − p)·q_d   ;   PS = ½·(p − p_min)·q_s`,
+          ],
+          traps: [
+            `"LR equilibrium = P = min MC" — wrong. It's <strong>P = MC = min AC</strong>. MC pierces AC at min AC, so MC equals AC there.`,
+            `1st Welfare Theorem REQUIRES no externalities, complete markets, price-taking — strip any assumption and it can fail.`,
+          ],
+        });
+      }
+    };
+
+    document.getElementById("check").addEventListener("click", () => {
+      const p = +slider.value;
+      // Score by how close to equilibrium price
+      const error = Math.abs(p - eq.p) / eq.p;
+      simPct = Math.round(Math.max(0, 1 - error / 0.1) * 100); // within 10% = 100
+      if (Math.abs(p - eq.p) < 0.25) simPct = 100;
+      document.getElementById("sim-result").innerHTML = `
+        Equilibrium price: <strong>${eq.p.toFixed(2)}</strong>, quantity: <strong>${eq.q.toFixed(2)}</strong>.
+        Your price: <strong>${p.toFixed(2)}</strong>.
+        Score: <span class="flash ${simPct >= 80 ? "good" : simPct >= 50 ? "warn" : "bad"}">${simPct}%</span>
+      `;
+      simDone = true;
+      tryFinish();
+    });
+
+    renderMCQSet(document.getElementById("mcqs"), CHAPTER_MCQS[1], {
+      onComplete: ({ pct }) => { mcqPct = pct; mcqDone = true; tryFinish(); },
+    });
+  </script>
+</body>
+</html>

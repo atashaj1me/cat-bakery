@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>The Only Bakery in Town — Cat Society Bakery</title>
+  <link rel="stylesheet" href="../assets/css/style.css">
+</head>
+<body>
+  <div class="shell">
+    <header class="topbar"></header>
+
+    <div id="story"></div>
+
+    <h2>Sim — Set the monopoly quantity</h2>
+    <div class="card">
+      <p>Baron Whiskerton has driven all competitors out. Linear demand <span class="formula" id="d-eq"></span>, MC = <span id="mc-show"></span>. Set q where MR = MC.</p>
+      <div class="controls">
+        <label class="field full">
+          <span class="name">Quantity q</span>
+          <input id="q" type="range" min="1" max="40" step="0.5" value="10">
+          <span class="formula" id="q-val">q = 10</span>
+        </label>
+      </div>
+      <div id="readout" style="margin-top:12px"></div>
+      <div id="chart" style="margin-top:14px"></div>
+      <p style="text-align:center; margin-top:12px;">
+        <button id="check">Lock in q →</button>
+      </p>
+      <p id="sim-result"></p>
+    </div>
+
+    <h2>Three exam-style MCQs</h2>
+    <div id="mcqs"></div>
+
+    <div id="mastery"></div>
+  </div>
+
+  <script type="module">
+    import { header, cat, readout, setReadout, mastery, pctOfOptimum } from "../assets/js/chapter.js";
+    import { monopolyLinear } from "../assets/js/econ.js";
+    import { Chart } from "../assets/js/graph.js";
+    import { renderMCQSet } from "../assets/js/mcq.js";
+    import { CHAPTER_MCQS } from "../assets/js/data/mcqs.js";
+
+    header({ num: 6, title: "👑 The Only Bakery in Town" });
+    document.getElementById("story").innerHTML = cat({
+      name: "Baron Whiskerton",
+      emoji: "🎩",
+      line: "I'm the only baker left. I face the entire demand curve. Set MR = MC, charge the markup, watch consumers cry. Then Cat Queen will tax me — and I'll pass through only HALF.",
+    });
+
+    // Random linear monopoly demand p = α − β·q, with MC.
+    const alpha = 30 + Math.floor(Math.random() * 10);
+    const beta = 1;
+    const mc = 4 + Math.floor(Math.random() * 4);
+    const opt = monopolyLinear({ alpha, beta, mc });
+
+    document.getElementById("d-eq").textContent = `p = ${alpha} − q`;
+    document.getElementById("mc-show").textContent = mc;
+
+    document.getElementById("readout").innerHTML = readout([
+      { id: "p", label: "Price p(q)", value: "—" },
+      { id: "mr", label: "MR", value: "—" },
+      { id: "profit", label: "Profit (p−MC)·q", value: "—" },
+      { id: "lerner", label: "Lerner index", value: "—" },
+    ]);
+
+    const qSlider = document.getElementById("q");
+    qSlider.max = alpha;
+    const qLab = document.getElementById("q-val");
+    const chartHost = document.getElementById("chart");
+
+    function drawMonop(q) {
+      const ch = new Chart({ qMax: alpha, pMax: alpha * 1.1 });
+      ch.drawAxes({ qLabel: "loaves", pLabel: "price" });
+      ch.drawDemand({ a: alpha, b: beta });
+      // MR has slope -2β, intercept α  ⇒ q at MR=0 is α/2
+      const mrLine = (qq) => alpha - 2 * beta * qq;
+      ch._line(ch.x(0), ch.y(alpha), ch.x(alpha / 2), ch.y(0), "mr");
+      // MC = constant horizontal line at mc
+      ch.drawPriceLine(mc, `MC = ${mc}`, "mc");
+      // Mark equilibrium price p(q)
+      const p = alpha - beta * q;
+      ch.marker(q, p, ` (q=${q.toFixed(1)}, p=${p.toFixed(1)})`);
+      ch.marker(opt.q, opt.p, ` optimum`);
+      ch.mountInto(chartHost);
+    }
+
+    function update() {
+      const q = +qSlider.value;
+      qLab.textContent = `q = ${q}`;
+      const p = alpha - beta * q;
+      const mr = alpha - 2 * beta * q;
+      const profit = (p - mc) * q;
+      const lerner = (p - mc) / p;
+      setReadout("p", p.toFixed(2));
+      setReadout("mr", mr.toFixed(2), Math.abs(mr - mc) < 0.5 ? "good" : "");
+      setReadout("profit", profit.toFixed(2), profit > 0 ? "good" : "bad");
+      setReadout("lerner", lerner.toFixed(3));
+      drawMonop(q);
+    }
+    qSlider.addEventListener("input", update);
+    qSlider.value = (alpha / 4).toFixed(0);
+    update();
+
+    let simPct = 0, mcqPct = 0, simDone = false, mcqDone = false;
+
+    document.getElementById("check").addEventListener("click", () => {
+      const q = +qSlider.value;
+      const p = alpha - beta * q;
+      const profit = (p - mc) * q;
+      simPct = pctOfOptimum(profit, opt.profit, 0.05);
+      document.getElementById("sim-result").innerHTML = `
+        Optimum: q* = ${opt.q.toFixed(2)}, p* = ${opt.p.toFixed(2)}, profit = ${opt.profit.toFixed(2)}.
+        You: q = ${q}, p = ${p.toFixed(2)}, profit = ${profit.toFixed(2)}.
+        Score: <span class="flash ${simPct >= 80 ? "good" : simPct >= 50 ? "warn" : "bad"}">${simPct}%</span>
+      `;
+      simDone = true; tryFinish();
+    });
+
+    const tryFinish = () => {
+      if (simDone && mcqDone) {
+        mastery({
+          chapterId: 6, simPct, mcqPct,
+          formulas: [
+            `Monopoly FOC: <span class="formula">MR = MC</span>. With p = α − β·q, MR = α − 2β·q.`,
+            `Optimum: q* = (α − MC)/(2β), p* = α − β·q*.`,
+            `Lerner index L = (p − MC)/p = 1/|ε|.`,
+            `Constant-elasticity price: <span class="formula">p = MC / (1 − 1/|ε|)</span>.`,
+            `Monopoly + per-unit tax t (linear demand): Δp = t/2 (half pass-through).`,
+            `3rd-degree PD: set MR_i = MC in each market; less elastic market gets higher price.`,
+          ],
+          traps: [
+            `"Monopolist with $t tax raises price by $t" — wrong; with linear demand, Δp = t/2.`,
+            `"3rd-degree PD always lowers total surplus" — ambiguous; it usually does but can raise output (and welfare) when it opens markets that would otherwise be unserved.`,
+            `"Lerner index = elasticity" — no; L = 1/|ε|.`,
+          ],
+        });
+      }
+    };
+
+    renderMCQSet(document.getElementById("mcqs"), CHAPTER_MCQS[6], {
+      onComplete: ({ pct }) => { mcqPct = pct; mcqDone = true; tryFinish(); },
+    });
+  </script>
+</body>
+</html>
