@@ -1,10 +1,9 @@
 // days.js — the 10-day Master Baker campaign script.
 //
-// Each entry is one playable day. The "letter" tells a business story; the
-// "fields" are what the player must compute. Behind the scenes, each problem
-// uses formulas already in econ.js — but the player is NEVER shown the formula
-// in the letter. The chapterRef link lets them consult the matching reference
-// notebook in a new tab if they're stuck.
+// Letters use LaTeX-style $...$ inline and $$...$$ display math which KaTeX
+// renders client-side. The player is NEVER told the formula in plain English
+// — only the situation and the variables. They must recognise the structure
+// (consumer demand, market clearing, tax incidence, monopoly, Pigouvian …).
 
 import {
   profitOneInput, cobbDouglasDemand, equilibrium, csLinear, psLinear,
@@ -12,7 +11,7 @@ import {
   externalityDriving, monopolyLinear, monopolyWithTax,
 } from "../econ.js";
 
-// helpers for grading
+// ---- helpers ---------------------------------------------------------------
 function scoreNumeric(your, target, tol) {
   if (!isFinite(your)) return 0;
   const diff = Math.abs(your - target);
@@ -21,29 +20,59 @@ function scoreNumeric(your, target, tol) {
   if (diff <= tol * 8) return Math.max(10, 40 - Math.round(30 * (diff - tol * 4) / (tol * 4)));
   return 0;
 }
-function avg(arr) { return arr.reduce((a, b) => a + b, 0) / arr.length; }
+const avg = arr => arr.reduce((a, b) => a + b, 0) / arr.length;
+
+// Random one-liners cats might mutter in the queue
+const FLAVOR_LINES = {
+  happy: [
+    "Purrfect, just the right price.",
+    "Mmm, fresh from the oven.",
+    "Worth every coin.",
+    "I'll be back tomorrow.",
+    "Tell Cat Queen I approve.",
+  ],
+  sad: [
+    "Too dear, I'm leaving.",
+    "Outrageous! Day-old, even.",
+    "I shall write to the Mayor.",
+    "Hmph. Stale and overpriced.",
+    "Find me when prices drop.",
+  ],
+};
+function flavorLine(satisfied) {
+  const pool = satisfied ? FLAVOR_LINES.happy : FLAVOR_LINES.sad;
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+
+// ---- The 10 days ----------------------------------------------------------
+//
+// Schema for each day:
+//   day, title, chapterRef, weather (emoji + line), letter() → {from, body}
+//   fields: [{ id, label, tol, hint? }]
+//   grade(letter, answers) → { targets, score, cashDelta, repDelta, summary }
 
 export const DAYS = [
-  // --- DAY 1 — single-input profit max -----------------------------------
+  // ============================================================ DAY 1
   {
     day: 1,
     title: "Your father's last letter",
     chapterRef: { id: 0, label: "Ch 0 — Bakery Preparation" },
+    weather: { emoji: "🌅", line: "Dawn on opening day. Frost on the croissant trays." },
     letter: () => {
       const a = 4, w = 2, p = 5;
       return {
-        from: "📜 The will of Old Baker Tomcat",
-        emoji: "🐈‍⬛",
-        body: `My dear cub,
-        <br><br>
-        The bakery is yours. Cats love bread; bread loves bakers. Each baker you hire pulls <strong>${a}·√L</strong> loaves out of the oven per day. I pay them <strong>${w}</strong> coins each. The market will pay you <strong>${p}</strong> coins per loaf — no haggling.
-        <br><br>
-        How many bakers, L, should you hire tomorrow to maximize the bakery's profit?`,
+        from: "🐈‍⬛ Old Baker Tomcat — Last Will & Testament",
+        body: `
+          <p>My dear cub,</p>
+          <p>The bakery is yours. Each baker you hire pulls $a \\cdot \\sqrt{L}$ loaves out of the oven per day, where $a = ${a}$. Their wage is $w = ${w}$ coins each. The market will pay $p = ${p}$ coins per loaf — and you cannot haggle, the price is set by the Whiskerton Guild.</p>
+          <p>How many bakers $L$ should you hire tomorrow to maximize my bakery's profit?</p>
+          <p style="margin-top:14px;">$$\\pi(L) = p \\cdot a \\sqrt{L} - w \\cdot L$$</p>
+        `,
         params: { a, w, p },
       };
     },
     fields: [
-      { id: "L", label: "Number of bakers L =", tol: 1 },
+      { id: "L", label: "Bakers to hire, L =", tol: 1, hint: "Watch profit react at L = 4, 16, 25, 36." },
     ],
     grade(letter, answers) {
       const { a, w, p } = letter.params;
@@ -54,36 +83,36 @@ export const DAYS = [
       return {
         targets: { L: opt.L },
         score,
-        cashDelta: Math.round(yourProfit * 1.0),  // 1:1 conversion
+        cashDelta: Math.round(yourProfit),
         repDelta: score >= 90 ? 0.3 : score >= 60 ? 0.1 : -0.1,
-        summary: `You hired ${yourL.toFixed(0)} bakers. Father's optimum: <strong>${opt.L.toFixed(1)}</strong> (profit ${opt.profit.toFixed(1)} coins). Your profit: ${yourProfit.toFixed(1)} coins.`,
+        summary: `You hired <strong>${yourL.toFixed(0)}</strong> bakers. Father's optimum: $L^* = (a p / 2w)^2 = ${opt.L.toFixed(0)}$ (profit ${opt.profit.toFixed(1)} coins). Your profit today: <strong>${yourProfit.toFixed(1)} coins</strong>.`,
       };
     },
   },
 
-  // --- DAY 2 — Cobb-Douglas consumer demand ------------------------------
+  // ============================================================ DAY 2
   {
     day: 2,
     title: "Penny Whiskers wants a quote",
     chapterRef: { id: 0, label: "Ch 0 — Consumer choice" },
+    weather: { emoji: "☀️", line: "Penny tail-flicks at the counter, waiting for her quote." },
     letter: () => {
       const alpha = 1, beta = 1, I = 12, px = 2, py = 3;
       return {
-        from: "🐱 Penny Whiskers",
-        emoji: "🐱",
-        body: `Dear baker,
-        <br><br>
-        I have <strong>${I}</strong> coins this week. I want to split my spending evenly between your loaves and your pastries — I value them equally. Tell me, if loaves cost <strong>${px}</strong> coins and pastries cost <strong>${py}</strong> coins, how many of each will I buy?
-        <br><br>
-        I need the exact numbers — I plan my pantry.
-        <br><br>
-        — Penny`,
+        from: "🐱 Penny Whiskers — Saturday Customer",
+        body: `
+          <p>Dear baker,</p>
+          <p>I have $I = ${I}$ coins this week. My taste for loaves $x$ and pastries $y$ is symmetric — I value them equally:</p>
+          <p>$$u(x, y) = x^{${alpha}} \\cdot y^{${beta}}$$</p>
+          <p>If loaves cost $p_x = ${px}$ coins and pastries cost $p_y = ${py}$ coins, how many of each will I buy from you?</p>
+          <p>I plan my pantry — give me exact numbers.</p>
+        `,
         params: { alpha, beta, I, px, py },
       };
     },
     fields: [
-      { id: "x", label: "Loaves she'll buy =", tol: 0.3 },
-      { id: "y", label: "Pastries she'll buy =", tol: 0.3 },
+      { id: "x", label: "Loaves Penny buys, x* =", tol: 0.3, hint: "Cobb-Douglas: constant expenditure shares." },
+      { id: "y", label: "Pastries Penny buys, y* =", tol: 0.3 },
     ],
     grade(letter, answers) {
       const { alpha, beta, I, px, py } = letter.params;
@@ -91,85 +120,88 @@ export const DAYS = [
       const sx = scoreNumeric(answers.x, opt.x, 0.3);
       const sy = scoreNumeric(answers.y, opt.y, 0.3);
       const score = (sx + sy) / 2;
-      // Penny pays for the bundle she actually predicted — if you guessed wrong, she walks out.
       const yourRevenue = score >= 60 ? opt.x * px + opt.y * py : 0;
       return {
         targets: { x: opt.x, y: opt.y },
         score,
         cashDelta: Math.round(yourRevenue),
-        repDelta: score >= 90 ? 0.2 : score >= 60 ? 0 : -0.2,
-        summary: `Penny buys exactly <strong>${opt.x.toFixed(2)} loaves</strong> and <strong>${opt.y.toFixed(2)} pastries</strong> (constant expenditure shares: half of 12 coins on each, divided by price). ${score >= 60 ? `She paid you ${(opt.x * px + opt.y * py).toFixed(2)} coins.` : "She walked out; you didn't know your own customer."}`,
+        repDelta: score >= 90 ? 0.25 : score >= 60 ? 0 : -0.2,
+        summary: `Constant expenditure shares: $x^* = \\frac{\\alpha}{\\alpha + \\beta} \\cdot \\frac{I}{p_x} = ${opt.x.toFixed(2)}$ and $y^* = ${opt.y.toFixed(2)}$. ${score >= 60 ? `Penny paid you <strong>${(opt.x * px + opt.y * py).toFixed(2)} coins</strong>.` : "Penny walked out — you didn't know your own customer."}`,
       };
     },
   },
 
-  // --- DAY 3 — market equilibrium ----------------------------------------
+  // ============================================================ DAY 3
   {
     day: 3,
-    title: "Market day in the square",
+    title: "Market day in Whiskerton Square",
     chapterRef: { id: 1, label: "Ch 1 — Market Day" },
+    weather: { emoji: "🏛️", line: "The square fills with bakers, kittens, and the smell of yeast." },
     letter: () => {
       const a = 24, b = 1, c = 0, d = 0.5;
       return {
-        from: "🏛️ Mayor Mittens",
-        emoji: "🐈‍⬛",
-        body: `It's market day! Whiskerton Square is full of bakers and cats.
-        <br><br>
-        The town crier shouts the day's numbers: cats together will buy <strong>${a} − p</strong> loaves at price p. All the bakers together will sell <strong>${d}·p</strong> loaves.
-        <br><br>
-        What is the price at which the market clears?
-        <br><br>
-        (You'll get profit proportional to the surplus you generate — guess close and the day's a good one.)`,
+        from: "🐈‍⬛ Mayor Mittens — Market Day Announcement",
+        body: `
+          <p>It's market day, dear baker. Whiskerton Square is full.</p>
+          <p>The town crier announces today's numbers:</p>
+          <p>$$q_d = ${a} - p \\qquad q_s = ${d}\\,p$$</p>
+          <p>What is the price at which the market clears? Find $p^*$, and the quantity traded $q^*$.</p>
+          <p>Your profit today scales with the surplus you help create.</p>
+        `,
         params: { a, b, c, d },
       };
     },
     fields: [
       { id: "p", label: "Clearing price p* =", tol: 0.5 },
+      { id: "q", label: "Clearing quantity q* =", tol: 0.5 },
     ],
     grade(letter, answers) {
-      const { a, b, c, d } = letter.params;
       const opt = equilibrium(letter.params);
-      const score = scoreNumeric(answers.p, opt.p, 0.5);
-      const cs = csLinear({ a, b, p: opt.p });
-      const ps = psLinear({ c, d, p: opt.p });
+      const sP = scoreNumeric(answers.p, opt.p, 0.5);
+      const sQ = scoreNumeric(answers.q, opt.q, 0.5);
+      const score = (sP + sQ) / 2;
+      const cs = csLinear({ a: letter.params.a, b: letter.params.b, p: opt.p });
+      const ps = psLinear({ c: letter.params.c, d: letter.params.d, p: opt.p });
       const yourSurplus = score >= 60 ? cs + ps : 0;
       return {
         targets: { p: opt.p, q: opt.q },
         score,
         cashDelta: Math.round(yourSurplus * 0.3),
         repDelta: score >= 90 ? 0.2 : score >= 60 ? 0.05 : -0.15,
-        summary: `Clearing price: <strong>${opt.p.toFixed(2)}</strong>, quantity ${opt.q.toFixed(2)}. ${score >= 60 ? `Total surplus generated: ${(cs + ps).toFixed(2)} coins — you take a 30% cut.` : "You missed the clearing price; cats and bakers went home."}`,
+        summary: `Setting $q_d = q_s$: $${letter.params.a} - p = ${letter.params.d}\\,p \\Rightarrow p^* = ${opt.p.toFixed(2)},\\ q^* = ${opt.q.toFixed(2)}$. Total surplus: ${(cs + ps).toFixed(2)}. ${score >= 60 ? "You took your 30% cut." : "You missed the clearing price."}`,
       };
     },
   },
 
-  // --- DAY 4 — price ceiling (Essay 1 archetype) -------------------------
+  // ============================================================ DAY 4
   {
     day: 4,
     title: "The mayor's price ceiling",
-    chapterRef: { id: 2, label: "Ch 2 — Sugar Tax (Essay 1)" },
+    chapterRef: { id: 2, label: "Ch 2 — Essay 1 walkthrough" },
+    weather: { emoji: "📜", line: "An emergency decree is nailed to your door." },
     letter: () => {
       const a = 26, b = 1, c = 0, d = 0.3, pmax = 10;
       return {
-        from: "🏛️ Mayor Mittens — Emergency Decree",
-        emoji: "📜",
-        body: `Bread prices have angered the working cats. By order of the council, no bakery may charge above <strong>${pmax} cents/loaf</strong>.
-        <br><br>
-        I need three numbers from you by sundown:
-        <ol>
-          <li>How many loaves cats will <em>want</em> at this price (q_d), and how many loaves bakers will <em>make</em> (q_s)?</li>
-          <li>The size of the resulting shortage.</li>
-          <li>The deadweight loss this control creates (the lost surplus from un-baked loaves).</li>
-        </ol>
-        (Demand: <strong>q = ${a} − p</strong>. Supply: <strong>q = ${d}·p</strong>.)`,
+        from: "🏛️ Mayor Mittens — Emergency Bread Decree",
+        body: `
+          <p>The working cats are angry. By council order, no bakery may charge more than $p_{\\max} = ${pmax}$ cents per loaf.</p>
+          <p>Demand $q_d = ${a} - p$. Supply $q_s = ${d}\\,p$.</p>
+          <p>Tell me four numbers by sundown:</p>
+          <ol>
+            <li>The quantity cats <em>want</em> at the ceiling, $q_d(p_{\\max})$.</li>
+            <li>The quantity bakers <em>make</em>, $q_s(p_{\\max})$.</li>
+            <li>The shortage.</li>
+            <li>The deadweight loss — the triangle of lost surplus.</li>
+          </ol>
+        `,
         params: { a, b, c, d, pmax },
       };
     },
     fields: [
-      { id: "qd", label: "Loaves wanted q_d =", tol: 0.5 },
-      { id: "qs", label: "Loaves made q_s =", tol: 0.5 },
+      { id: "qd", label: "q_d at ceiling =", tol: 0.5 },
+      { id: "qs", label: "q_s at ceiling =", tol: 0.5 },
       { id: "shortage", label: "Shortage =", tol: 0.5 },
-      { id: "dwl", label: "Deadweight loss =", tol: 1 },
+      { id: "dwl", label: "Deadweight loss =", tol: 1, hint: "½ · base · height, where height = D(q_s) − p_max." },
     ],
     grade(letter, answers) {
       const r = priceCeiling(letter.params);
@@ -180,209 +212,216 @@ export const DAYS = [
         scoreNumeric(answers.dwl, r.dwl, 1),
       ];
       const score = avg(scores);
-      // Pay = bakery survives the day if it served loyal cats well.
       return {
         targets: { qd: r.qd, qs: r.qs, shortage: r.shortage, dwl: r.dwl },
         score,
-        cashDelta: Math.round((score - 50) * 0.5),   // -25..+25
+        cashDelta: Math.round((score - 50) * 0.5),
         repDelta: score >= 80 ? 0.3 : score >= 50 ? 0 : -0.2,
-        summary: `q_d = ${r.qd.toFixed(2)}, q_s = ${r.qs.toFixed(2)}, shortage = <strong>${r.shortage.toFixed(2)}</strong>, DWL = <strong>${r.dwl.toFixed(2)}</strong>. The cats who queued and didn't get bread will remember this — set up a freshness reputation tomorrow.`,
+        summary: `$q_d = ${r.qd.toFixed(2)}$, $q_s = ${r.qs.toFixed(2)}$, shortage = $${r.shortage.toFixed(2)}$, DWL = $\\frac{1}{2} \\cdot (${r.eq.q.toFixed(1)} - ${r.qs.toFixed(1)}) \\cdot (${r.pAtQs_d.toFixed(1)} - ${letter.params.pmax}) = ${r.dwl.toFixed(2)}$.`,
       };
     },
   },
 
-  // --- DAY 5 — per-unit tax ----------------------------------------------
+  // ============================================================ DAY 5
   {
     day: 5,
-    title: "By royal decree: sugar tax",
+    title: "By royal decree — sugar tax",
     chapterRef: { id: 2, label: "Ch 2 — Sugar Tax" },
+    weather: { emoji: "👑", line: "A royal courier hands you a wax-sealed scroll." },
     letter: () => {
       const a = 24, b = 1, c = 0, d = 0.4, t = 4;
       return {
         from: "👑 Cat Queen Reginald III",
-        emoji: "📜",
-        body: `By royal decree, I impose a <strong>${t}-coin tax</strong> on every sugar bun sold within Whiskerton.
-        <br><br>
-        My census shows my subjects will buy <strong>${a} − p</strong> sugar buns at any price p. Your kitchen produces <strong>${d}·p</strong> buns when sold at price p.
-        <br><br>
-        Tell me the price you will charge tomorrow (consumers pay you <em>this</em> price), and how many buns you will sell. My revenue collectors need the numbers.`,
+        body: `
+          <p>By my royal hand, I impose a per-bun tax of $t = ${t}$ coins on every sugar bun sold in Whiskerton.</p>
+          <p>Demand from my subjects: $q_d = ${a} - p$. Your supply: $q_s = ${d}\\,p$.</p>
+          <p>Tell me:</p>
+          <ol>
+            <li>The new price consumers pay, $p_c$.</li>
+            <li>The number of buns sold, $q$.</li>
+            <li>The tax revenue I shall collect.</li>
+          </ol>
+          <p style="margin-top:8px;"><em>Reminder: the equilibrium with a tax solves $a - b\\,p_c = c + d\\,(p_c - t)$.</em></p>
+        `,
         params: { a, b, c, d, t },
       };
     },
     fields: [
-      { id: "pc", label: "Price you charge p_c =", tol: 0.6 },
-      { id: "q", label: "Buns sold q =", tol: 0.4 },
+      { id: "pc", label: "Consumer price p_c =", tol: 0.6 },
+      { id: "q",  label: "Quantity sold q =", tol: 0.4 },
+      { id: "rev", label: "Tax revenue R =", tol: 1 },
     ],
     grade(letter, answers) {
       const r = perUnitTax(letter.params);
       const sP = scoreNumeric(answers.pc, r.pc, 0.6);
       const sQ = scoreNumeric(answers.q, r.q, 0.4);
-      const score = (sP + sQ) / 2;
-      // Net profit = (pc - mc)·q - tax already netted; here we use revenue net of producer-side burden.
+      const sR = scoreNumeric(answers.rev, r.revenue, 1);
+      const score = (sP + sQ + sR) / 3;
       const cashDelta = score >= 60
-        ? Math.round((r.pc - letter.params.t) * r.q)   // your net per bun × buns sold
-        : -Math.round(r.dwl);                          // mis-priced → eat the DWL
+        ? Math.round((r.pc - letter.params.t) * r.q)
+        : -Math.round(r.dwl);
       return {
-        targets: { pc: r.pc, q: r.q },
+        targets: { pc: r.pc, q: r.q, rev: r.revenue },
         score,
         cashDelta,
         repDelta: score >= 80 ? 0.2 : score >= 50 ? 0 : -0.2,
-        summary: `Correct price p_c = <strong>${r.pc.toFixed(2)}</strong>, q = <strong>${r.q.toFixed(2)}</strong>. Tax revenue to the Queen: ${r.revenue.toFixed(2)}. DWL: ${r.dwl.toFixed(2)}. Consumer-side burden: ${(r.consumerShare * 100).toFixed(0)}%; producer-side: ${(r.producerShare * 100).toFixed(0)}%.`,
+        summary: `$p_c = ${r.pc.toFixed(2)}$, $q = ${r.q.toFixed(2)}$, revenue $= t \\cdot q = ${r.revenue.toFixed(2)}$. Consumer-side burden: ${(r.consumerShare * 100).toFixed(0)}% (less elastic side pays more). DWL = ${r.dwl.toFixed(2)}.`,
       };
     },
   },
 
-  // --- DAY 6 — tariff decision -------------------------------------------
+  // ============================================================ DAY 6
   {
     day: 6,
     title: "Felinia trade treaty",
     chapterRef: { id: 3, label: "Ch 3 — Tariffs (Essay 2)" },
+    weather: { emoji: "🌾", line: "A flour caravan arrives from Felinia, paperwork in tow." },
     letter: () => {
       const A = { a: 20, b: 1, c: 0, d: 0.5 };
       const B = { a: 26, b: 1, c: 0, d: 0.4 };
       const pStar = 16;
       const t = 3;
       return {
-        from: "🤝 Trade Minister Tabby",
-        emoji: "🌾",
-        body: `Felinia (the exporter) wants to sell flour to Whiskerton (you). The world price would be <strong>p* = ${pStar}</strong>.
-        <br><br>
-        Your domestic flour market: q_d = <strong>${B.a} − p</strong>, q_s = <strong>${B.d}·p</strong>. The Queen is considering a <strong>${t}-coin tariff</strong> on imports.
-        <br><br>
-        Compute, under the tariff regime in your own market (B):
-        <ol>
-          <li>Domestic consumer surplus (CS)</li>
-          <li>Domestic producer surplus (PS)</li>
-          <li>Tariff revenue collected</li>
-        </ol>`,
+        from: "🐅 Trade Minister Tabby",
+        body: `
+          <p>Felinia (exporter) and Whiskerton (you, importer). Free-trade world price $p^* = ${pStar}$.</p>
+          <p>Your home market: $q_d = ${B.a} - p$, $q_s = ${B.d}\\,p$.</p>
+          <p>The Queen levies a tariff $t = ${t}$ on every imported sack of flour. Under the tariff, give me:</p>
+          <ol>
+            <li>Domestic consumer surplus (the area under demand, above $p^* + t$).</li>
+            <li>Domestic producer surplus.</li>
+            <li>Tariff revenue collected by the Queen, $t \\cdot Q_{\\text{imports}}$.</li>
+          </ol>
+        `,
         params: { A, B, pStar, t },
       };
     },
     fields: [
-      { id: "cs", label: "CS under tariff =", tol: 1 },
-      { id: "ps", label: "PS under tariff =", tol: 1 },
-      { id: "rev", label: "Tariff revenue =", tol: 1 },
+      { id: "cs",  label: "CS under tariff =",  tol: 1, hint: "CS = ½ · (p_choke − p) · q_d at p = p* + t." },
+      { id: "ps",  label: "PS under tariff =",  tol: 1 },
+      { id: "rev", label: "Tariff revenue =",   tol: 1, hint: "Rectangle: t × imports under tariff." },
     ],
     grade(letter, answers) {
       const r = tariffSurplus({ marketA: letter.params.A, marketB: letter.params.B, pStar: letter.params.pStar, t: letter.params.t });
-      const ssCS = scoreNumeric(answers.cs, r.B.tariff.CS, 1);
-      const ssPS = scoreNumeric(answers.ps, r.B.tariff.PS, 1);
-      const ssR = scoreNumeric(answers.rev, r.B.tariff.Rev, 1);
-      const score = (ssCS + ssPS + ssR) / 3;
-      const cashDelta = score >= 60 ? Math.round((ssCS + ssPS + ssR) / 3 / 5) : -10;
+      const sCS = scoreNumeric(answers.cs,  r.B.tariff.CS,  1);
+      const sPS = scoreNumeric(answers.ps,  r.B.tariff.PS,  1);
+      const sR  = scoreNumeric(answers.rev, r.B.tariff.Rev, 1);
+      const score = (sCS + sPS + sR) / 3;
       return {
         targets: { cs: r.B.tariff.CS, ps: r.B.tariff.PS, rev: r.B.tariff.Rev },
         score,
-        cashDelta,
+        cashDelta: score >= 60 ? Math.round(score / 5) : -10,
         repDelta: score >= 80 ? 0.2 : score >= 50 ? 0 : -0.15,
-        summary: `Under the tariff: CS = <strong>${r.B.tariff.CS.toFixed(2)}</strong>, PS = <strong>${r.B.tariff.PS.toFixed(2)}</strong>, Rev = <strong>${r.B.tariff.Rev.toFixed(2)}</strong>. Free trade would yield total surplus ${r.B.freeTrade.Total.toFixed(2)} (vs tariff ${r.B.tariff.Total.toFixed(2)}). Two DWL triangles cost ~${(r.B.freeTrade.Total - r.B.tariff.Total).toFixed(2)}.`,
+        summary: `CS $= ${r.B.tariff.CS.toFixed(2)}$, PS $= ${r.B.tariff.PS.toFixed(2)}$, Rev $= ${r.B.tariff.Rev.toFixed(2)}$. Free trade would yield total ${r.B.freeTrade.Total.toFixed(2)}; tariff yields ${r.B.tariff.Total.toFixed(2)}. The two DWL triangles cost ~${(r.B.freeTrade.Total - r.B.tariff.Total).toFixed(2)}.`,
       };
     },
   },
 
-  // --- DAY 7 — Pigouvian tax ---------------------------------------------
+  // ============================================================ DAY 7
   {
     day: 7,
     title: "Whiskerton Air Board complaint",
     chapterRef: { id: 4, label: "Ch 4 — Externalities" },
+    weather: { emoji: "🏭", line: "Smoke from your ovens has drifted across the alley." },
     letter: () => {
       const alpha = 8, gamma = 2;
       return {
         from: "🚒 Whiskerton Air Board",
-        emoji: "🏭",
-        body: `Citizens are coughing. Our measurements:
-        <br><br>
-        Your private utility from baking d batches is <strong>${alpha}·d − d²</strong>. The smoke causes <strong>${gamma}·d</strong> of harm to neighbours (you ignore this in your private decision).
-        <br><br>
-        We're asking you to set a voluntary per-batch tax that internalises the harm. What rate t?`,
+        body: `
+          <p>Citizens are coughing. We have measured the harm.</p>
+          <p>Your private utility from baking $d$ batches:</p>
+          <p>$$u(d) = ${alpha}\\,d - d^2 - ${gamma}\\,h, \\quad h = d$$</p>
+          <p>Privately you ignore the $-\\gamma h$ term and choose $d_{\\text{Nash}}$. The social planner cares about both terms and chooses $d_{\\text{Social}}$.</p>
+          <p>Give us the Pigouvian tax $t^*$ that would lead your private FOC to the social optimum.</p>
+        `,
         params: { alpha, gamma },
       };
     },
     fields: [
-      { id: "t", label: "Pigouvian tax t =", tol: 0.3 },
-      { id: "dN", label: "Your private choice d (Nash) =", tol: 0.3 },
-      { id: "dS", label: "Socially optimal d =", tol: 0.3 },
+      { id: "dN", label: "Private choice d (Nash) =", tol: 0.3 },
+      { id: "dS", label: "Social optimum d =", tol: 0.3 },
+      { id: "t",  label: "Pigouvian tax t* =", tol: 0.3 },
     ],
     grade(letter, answers) {
       const r = externalityDriving(letter.params);
-      const sT = scoreNumeric(answers.t, r.pigouvianTax, 0.3);
       const sN = scoreNumeric(answers.dN, r.nash, 0.3);
       const sS = scoreNumeric(answers.dS, r.social, 0.3);
-      const score = (sT + sN + sS) / 3;
+      const sT = scoreNumeric(answers.t,  r.pigouvianTax, 0.3);
+      const score = (sN + sS + sT) / 3;
       return {
-        targets: { t: r.pigouvianTax, dN: r.nash, dS: r.social },
+        targets: { dN: r.nash, dS: r.social, t: r.pigouvianTax },
         score,
-        cashDelta: score >= 80 ? 15 : score >= 50 ? 0 : -25,   // court fine if you fail
+        cashDelta: score >= 80 ? 25 : score >= 50 ? 0 : -30,
         repDelta: score >= 80 ? 0.3 : score >= 50 ? 0 : -0.3,
-        summary: `Pigouvian tax should be γ = <strong>${r.pigouvianTax}</strong>. Nash d = ${r.nash}; social d = ${r.social}. ${score < 50 ? "The Health Authority sent inspectors — fined." : "Air Board calls you a responsible operator."}`,
+        summary: `Nash FOC: $\\alpha - 2d = 0 \\Rightarrow d = ${r.nash}$. Social FOC (with $h = d$): $\\alpha - 2d - \\gamma = 0 \\Rightarrow d = ${r.social}$. Pigouvian $t^* = \\gamma = ${r.pigouvianTax}$. ${score < 50 ? "The Air Board fined you 30 coins." : "The Board commends you."}`,
       };
     },
   },
 
-  // --- DAY 8 — adverse selection / freshness ------------------------------
+  // ============================================================ DAY 8
   {
     day: 8,
-    title: "Stale croissant scandal",
+    title: "The stale croissant scandal",
     chapterRef: { id: 5, label: "Ch 5 — Asymmetric Info" },
+    weather: { emoji: "🍋", line: "The Whiskerton Tail's morning edition runs your name in bold." },
     letter: () => {
-      const fresh_v = 12;        // fresh croissant reservation price
-      const stale_v = 4;         // stale ones still edible
-      const markup = 1.0;        // buyer's offer = average value
-      // 60% of inventory is fresh
+      const vH = 12, vL = 4;
       return {
-        from: "📰 The Whiskerton Tail",
-        emoji: "📰",
-        body: `Scandal: Inspector Mittens bought a "fresh" croissant that was a day old. You sell both fresh (<strong>${fresh_v}</strong>-coin reservation) and stale (<strong>${stale_v}</strong>-coin reservation) at the same average price.
-        <br><br>
-        If <strong>θ</strong> is the fraction of fresh stock in your basket, buyers offer the average value: <strong>θ·${fresh_v} + (1−θ)·${stale_v}</strong> coins.
-        <br><br>
-        Question: at what <strong>minimum θ</strong> will fresh-loving cats stay (i.e. the offer ≥ their reservation <strong>${fresh_v}</strong>)?
-        <br><br>
-        And what happens at θ below that?`,
-        params: { fresh_v, stale_v, markup },
+        from: "📰 The Whiskerton Tail — front page",
+        body: `
+          <p>Inspector Mittens bought a fresh-priced croissant — but it was a day old.</p>
+          <p>You sell from one display: fresh croissants ($v_H = ${vH}$) and stale ones ($v_L = ${vL}$) at the same average price. Let $\\theta$ be the fraction fresh. Cats offer the average value:</p>
+          <p>$$p = \\theta \\cdot ${vH} + (1 - \\theta) \\cdot ${vL}$$</p>
+          <p>Fresh-loving cats only stay if $p \\geq v_H$.</p>
+          <p>What is the threshold $\\theta^*$ above which they stay? And what fraction of value is lost if you sell at $\\theta = 0.5$?</p>
+        `,
+        params: { vH, vL },
       };
     },
     fields: [
-      { id: "theta_star", label: "Threshold θ* =", tol: 0.05 },
+      { id: "theta_star", label: "Threshold θ* =", tol: 0.05, hint: "Solve p ≥ v_H exactly: θ ≥ ?" },
+      { id: "loss_at_half", label: "Avg value at θ = 0.5 =", tol: 0.3 },
     ],
     grade(letter, answers) {
-      // Solve: θ·12 + (1−θ)·4 ≥ 12 → 8θ + 4 ≥ 12 → θ ≥ 1. With markup=1 this is θ=1 — a fully fresh pool. (Pure lemons argument.)
-      const target = (letter.params.fresh_v - letter.params.stale_v) > 0
-        ? (letter.params.fresh_v - letter.params.stale_v * letter.params.markup) / ((letter.params.fresh_v - letter.params.stale_v) * letter.params.markup)
-        : 1;
-      const tStar = Math.min(1, Math.max(0, target));
-      const score = scoreNumeric(answers.theta_star, tStar, 0.05);
+      // Solve θ·vH + (1−θ)·vL = vH: only θ = 1 works (pure-lemons). So θ* = 1.
+      const tStar = 1;
+      const avgAtHalf = 0.5 * letter.params.vH + 0.5 * letter.params.vL;
+      const s1 = scoreNumeric(answers.theta_star, tStar, 0.05);
+      const s2 = scoreNumeric(answers.loss_at_half, avgAtHalf, 0.3);
+      const score = (s1 + s2) / 2;
       return {
-        targets: { theta_star: tStar },
+        targets: { theta_star: tStar, loss_at_half: avgAtHalf },
         score,
-        cashDelta: score >= 80 ? 20 : score >= 50 ? 0 : -20,
-        repDelta: score >= 80 ? 0.2 : score >= 50 ? -0.05 : -0.3,
-        summary: `Threshold θ* = <strong>${tStar.toFixed(2)}</strong>. Below this, fresh-only cats exit, the pool gets staler, you must drop the price, and even more fresh-buyers exit. That's the unraveling.`,
+        cashDelta: score >= 80 ? 20 : score >= 50 ? -5 : -25,
+        repDelta: score >= 80 ? 0.2 : score >= 50 ? -0.1 : -0.4,
+        summary: `Threshold $\\theta^* = 1$ (only a fully-fresh pool keeps fresh-only cats; this is the Akerlof unraveling). Avg value at $\\theta = 0.5$ is $\\frac{${letter.params.vH} + ${letter.params.vL}}{2} = ${avgAtHalf.toFixed(1)}$. ${score >= 80 ? "You signal freshness next time." : "Inspector Mittens spreads the word."}`,
       };
     },
   },
 
-  // --- DAY 9 — monopoly ---------------------------------------------------
+  // ============================================================ DAY 9
   {
     day: 9,
-    title: "The rival has retired",
+    title: "The rival baker retires",
     chapterRef: { id: 6, label: "Ch 6 — Monopoly" },
+    weather: { emoji: "🎩", line: "Baron Whiskerton hangs his apron — you are the only baker left." },
     letter: () => {
       const alpha = 30, beta = 1, mc = 6;
       return {
-        from: "🎩 Baron Whiskerton",
-        emoji: "🎩",
-        body: `I am retiring to the countryside. The bakery trade is yours — alone. You are now the only baker in Whiskerton.
-        <br><br>
-        The town's demand for loaves: <strong>p = ${alpha} − q</strong>. Your marginal cost: <strong>${mc}</strong> coins per loaf.
-        <br><br>
-        Decide your daily output q and price p. Do not behave like a price-taker — you set the price now.`,
+        from: "🎩 Baron Whiskerton — Retirement Notice",
+        body: `
+          <p>I retire to the countryside. The town is yours.</p>
+          <p>Town demand: $p = ${alpha} - q$. Your marginal cost: $MC = ${mc}$.</p>
+          <p>You are no longer a price-taker. Set $q$ and $p$ to maximize profit. Recall:</p>
+          <p>$$MR = ${alpha} - 2q, \\qquad MR = MC$$</p>
+          <p>What $q$ and $p$ will you set?</p>
+        `,
         params: { alpha, beta, mc },
       };
     },
     fields: [
-      { id: "q", label: "Output q =", tol: 0.5 },
-      { id: "p", label: "Price p =", tol: 0.5 },
+      { id: "q", label: "Monopoly output q =", tol: 0.5 },
+      { id: "p", label: "Monopoly price p =",  tol: 0.5 },
     ],
     grade(letter, answers) {
       const opt = monopolyLinear(letter.params);
@@ -395,47 +434,49 @@ export const DAYS = [
         score,
         cashDelta: score >= 60 ? Math.round(Math.max(0, profit)) : -10,
         repDelta: score >= 80 ? 0.2 : score >= 50 ? -0.1 : -0.3,
-        summary: `Monopoly q = <strong>${opt.q.toFixed(2)}</strong>, p = <strong>${opt.p.toFixed(2)}</strong>, profit = ${opt.profit.toFixed(2)}. Set MR = MC: ${letter.params.alpha} − 2q = ${letter.params.mc}.`,
+        summary: `$MR = MC \\Rightarrow ${letter.params.alpha} - 2q = ${letter.params.mc} \\Rightarrow q^* = ${opt.q.toFixed(2)}$, $p^* = ${opt.p.toFixed(2)}$, profit = ${opt.profit.toFixed(2)}. The Lerner index $L = \\frac{p - MC}{p} = ${((opt.p - letter.params.mc)/opt.p).toFixed(3)}$.`,
       };
     },
   },
 
-  // --- DAY 10 — monopoly + per-unit tax ---------------------------------
+  // ============================================================ DAY 10
   {
     day: 10,
-    title: "Royal sugar-bun tax — monopoly edition",
+    title: "Monopoly tax — the half pass-through",
     chapterRef: { id: 6, label: "Ch 6 — Monopoly + tax" },
+    weather: { emoji: "📜", line: "A second royal scroll. The Queen now taxes you specifically." },
     letter: () => {
       const alpha = 40, beta = 1, mc = 9, t = 8;
       return {
-        from: "👑 Cat Queen Reginald III",
-        emoji: "📜",
-        body: `Now that you are the only baker, I tax you specifically: <strong>${t} coins per loaf</strong>.
-        <br><br>
-        Your demand: <strong>p = ${alpha} − q</strong>. Your MC was <strong>${mc}</strong>. What price will you charge after the tax?
-        <br><br>
-        Be careful — your instinct will be to pass the whole tax to customers. With linear demand, that is wrong.`,
+        from: "👑 Cat Queen Reginald III — Per-Unit Tax",
+        body: `
+          <p>Now that you are the only baker, I impose $t = ${t}$ coins per loaf.</p>
+          <p>Demand: $p = ${alpha} - q$. Your effective marginal cost rises from $${mc}$ to $${mc + t}$.</p>
+          <p>Common intuition says you'll raise the price by the full $t$. Common intuition is wrong on linear demand.</p>
+          <p>Tell me your new price, and the change $\\Delta p$.</p>
+        `,
         params: { alpha, beta, mc, t },
       };
     },
     fields: [
       { id: "p_new", label: "New price p =", tol: 0.5 },
-      { id: "dp", label: "Price increase Δp =", tol: 0.5 },
+      { id: "dp",    label: "Price increase Δp =", tol: 0.5, hint: "Less than t. Half, in fact." },
     ],
     grade(letter, answers) {
       const r = monopolyWithTax(letter.params);
       const sP = scoreNumeric(answers.p_new, r.post.p, 0.5);
-      const sD = scoreNumeric(answers.dp, r.dP, 0.5);
+      const sD = scoreNumeric(answers.dp,    r.dP,    0.5);
       const score = (sP + sD) / 2;
       return {
         targets: { p_new: r.post.p, dp: r.dP },
         score,
-        cashDelta: score >= 80 ? 40 : score >= 50 ? 0 : -20,
-        repDelta: score >= 80 ? 0.3 : score >= 50 ? 0 : -0.2,
-        summary: `Pre-tax: q = ${r.pre.q.toFixed(2)}, p = ${r.pre.p.toFixed(2)}. Post-tax: q = ${r.post.q.toFixed(2)}, p = <strong>${r.post.p.toFixed(2)}</strong>. Pass-through = Δp = <strong>${r.dP.toFixed(2)}</strong> = t/2. Linear demand splits tax half-and-half — this is the half-pass-through rule.`,
+        cashDelta: score >= 80 ? 50 : score >= 50 ? 5 : -20,
+        repDelta: score >= 80 ? 0.4 : score >= 50 ? 0 : -0.2,
+        summary: `Pre-tax: $q^* = ${r.pre.q.toFixed(2)}$, $p^* = ${r.pre.p.toFixed(2)}$. With tax, effective $MC = ${letter.params.mc + letter.params.t}$, so $q = \\frac{\\alpha - (MC + t)}{2\\beta} = ${r.post.q.toFixed(2)}$, $p = ${r.post.p.toFixed(2)}$. $\\Delta p = t/2 = ${r.dP.toFixed(2)}$ — the half-pass-through rule for linear demand.`,
       };
     },
   },
 ];
 
 export function getDay(n) { return DAYS.find(d => d.day === n); }
+export { flavorLine };

@@ -4,7 +4,10 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Market Day — Cat Society Bakery</title>
-  <link rel="stylesheet" href="../assets/css/style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=JetBrains+Mono:wght@400;600&display=swap">
+  <link rel="stylesheet" href="../assets/css/style.css?v=3">
 </head>
 <body>
   <div class="shell">
@@ -38,11 +41,11 @@
   </div>
 
   <script type="module">
-    import { header, cat, readout, setReadout, mastery, pctOfOptimum } from "../assets/js/chapter.js";
-    import { equilibrium, csLinear, psLinear } from "../assets/js/econ.js";
-    import { Chart } from "../assets/js/graph.js";
-    import { renderMCQSet } from "../assets/js/mcq.js";
-    import { CHAPTER_MCQS } from "../assets/js/data/mcqs.js";
+    import { header, cat, readout, setReadout, mastery, pctOfOptimum } from "../assets/js/chapter.js?v=3";
+    import { equilibrium, csLinear, psLinear } from "../assets/js/econ.js?v=3";
+    import { Chart } from "../assets/js/graph.js?v=3";
+    import { renderMCQSet } from "../assets/js/mcq.js?v=3";
+    import { CHAPTER_MCQS } from "../assets/js/data/mcqs.js?v=3";
 
     header({ num: 1, title: "🏪 Market Day" });
 
