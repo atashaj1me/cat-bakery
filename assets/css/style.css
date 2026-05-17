@@ -520,7 +520,7 @@ ul.trap-list li { margin-bottom: 8px; color: var(--ink-soft); }
   border-radius: var(--radius);
 }
 .letter .from {
-  font-weight: bold;
+  font-weight: 700;
   color: var(--letter-accent);
   font-size: 1.05em;
   margin-bottom: 12px;
@@ -528,14 +528,28 @@ ul.trap-list li { margin-bottom: 8px; color: var(--ink-soft); }
   padding-bottom: 8px;
   font-style: italic;
 }
-.letter .body { color: var(--letter-ink); }
-.letter strong {
+.letter,
+.letter .body,
+.letter .body p,
+.letter .body li,
+.letter .body ol,
+.letter .body ul,
+.letter .body em,
+.letter .body span,
+.letter p,
+.letter li,
+.letter em {
+  color: var(--letter-ink);
+}
+.letter strong, .letter .body strong {
   color: var(--letter-accent);
   background: rgba(122, 74, 29, 0.10);
   padding: 1px 5px;
   border-radius: 3px;
+  font-weight: 700;
 }
 .letter a { color: var(--letter-accent); }
+.letter ol, .letter ul { padding-left: 22px; }
 
 .consequence-banner {
   background: linear-gradient(135deg, var(--paper-2), var(--paper));
