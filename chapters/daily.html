@@ -315,7 +315,8 @@
         `}
       `;
 
-      submitBtn.disabled = true;
+      const submitBtn = document.getElementById("submit");
+      if (submitBtn) submitBtn.disabled = true;
       const sleep = document.getElementById("sleep");
       if (sleep) sleep.addEventListener("click", () => { window.scrollTo({ top: 0, behavior: "smooth" }); render(); });
       const loanBtn = document.getElementById("loan-btn");
