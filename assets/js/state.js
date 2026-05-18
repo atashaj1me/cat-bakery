@@ -44,6 +44,9 @@ const DEFAULT_BAKERY = {
   apocalypseInProgress: null,
   apocalypseLoansTaken: 0,
   apocalypseTech: null,
+  // ---- Cheatsheet Vault ----
+  cheatsheets: [],          // ids of unlocked cheats
+  cheatProgress: {},        // { cheatId: count } for "needs N" cheats
 };
 
 const DEFAULT_STATE = {
@@ -307,6 +310,21 @@ export const State = {
     const s = read();
     s.bakery.apocalypseCash += amount;
     s.bakery.apocalypseLoansTaken += 1;
+    write(s);
+  },
+
+  // ----- Cheatsheet Vault -----
+  saveCheats({ unlocked, progress }) {
+    const s = read();
+    s.bakery.cheatsheets = unlocked;
+    s.bakery.cheatProgress = progress;
+    write(s);
+  },
+
+  resetCheats() {
+    const s = read();
+    s.bakery.cheatsheets = [];
+    s.bakery.cheatProgress = {};
     write(s);
   },
 

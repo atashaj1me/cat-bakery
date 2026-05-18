@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=JetBrains+Mono:wght@400;600&display=swap">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV" crossorigin="anonymous">
-  <link rel="stylesheet" href="../assets/css/style.css?v=7">
+  <link rel="stylesheet" href="../assets/css/style.css?v=8">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ctext y='52' font-size='52'%3E🥐%3C/text%3E%3C/svg%3E">
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" integrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8" crossorigin="anonymous"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" integrity="sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05" crossorigin="anonymous"></script>
@@ -33,14 +33,16 @@
   </div>
 
   <script type="module">
-    import { State } from "../assets/js/state.js?v=7";
-    import { DAYS, getDay, flavorLine } from "../assets/js/data/days.js?v=7";
-    import { HELL_DAYS, getHellDay } from "../assets/js/data/days-hell.js?v=7";
-    import { APOCALYPSE_DAYS, getApocalypseDay } from "../assets/js/data/days-apocalypse.js?v=7";
-    import { ARC_SCROLLS, NPC_INTERJECTIONS, MEMORY_TEMPLATES } from "../assets/js/data/lore-apocalypse.js?v=7";
-    import { CATS, purchase } from "../assets/js/data/cats.js?v=7";
-    import { TECHS, TECH_LIST, getTech, rollTech } from "../assets/js/data/technologies.js?v=7";
-    import { FINAL_MOCK, MOCK_REMEDIATION } from "../assets/js/data/mcqs.js?v=7";
+    import { State } from "../assets/js/state.js?v=8";
+    import { DAYS, getDay, flavorLine } from "../assets/js/data/days.js?v=8";
+    import { HELL_DAYS, getHellDay } from "../assets/js/data/days-hell.js?v=8";
+    import { APOCALYPSE_DAYS, getApocalypseDay } from "../assets/js/data/days-apocalypse.js?v=8";
+    import { ARC_SCROLLS, NPC_INTERJECTIONS, MEMORY_TEMPLATES } from "../assets/js/data/lore-apocalypse.js?v=8";
+    import { CATS, purchase } from "../assets/js/data/cats.js?v=8";
+    import { TECHS, TECH_LIST, getTech, rollTech } from "../assets/js/data/technologies.js?v=8";
+    import { FINAL_MOCK, MOCK_REMEDIATION } from "../assets/js/data/mcqs.js?v=8";
+    import { tryUnlockCheats } from "../assets/js/cheats.js?v=8";
+    import { CHEAT_BY_ID } from "../assets/js/data/cheatsheets.js?v=8";
 
     // --- mode detection from URL ---
     const urlParams = new URLSearchParams(window.location.search);
@@ -98,6 +100,11 @@
         setTimeout(() => el.remove(), 360);
       }, 4500);
     }
+
+    // Wire cheats engine to use our toast for discovery notifications
+    window.cheatsToast = (cheat) => {
+      toast(`<strong>${cheat.icon} ${cheat.title}</strong><br><small>${cheat.discoveryLine}</small><br><a href="vault.html" style="color:var(--accent); text-decoration: underline;">Open the Vault →</a>`, "win", "📜 Cheat discovered");
+    };
 
     // ---- accessors that route based on mode ----
     function currentDay(b)  { return MODE === "apocalypse" ? b.apocalypseDay : MODE === "hell" ? b.hellDay : b.day; }
@@ -295,6 +302,13 @@
         repDelta: result.repDelta, summary: result.summary,
       });
 
+      // Cheat discovery: Vanilla day completion emits a "day" context
+      tryUnlockCheats({ trigger: "day", mode: "vanilla", day: day.day, score: result.score });
+      // Essay walkthroughs surface inside their chapters, not here; but Day 4 vanilla
+      // does a price-ceiling, and Day 6 does the tariff variant — emit those too.
+      if (day.day === 4 && result.score >= 50) tryUnlockCheats({ trigger: "essay1", score: result.score, mode: "vanilla" });
+      if (day.day === 6 && result.score >= 50) tryUnlockCheats({ trigger: "essay2", score: result.score, mode: "vanilla" });
+
       const newState = State.bakery();
       ACHIEVEMENTS.forEach(a => {
         if (!newState.achievements.includes(a.id) && a.check(newState, newState.log[0])) {
@@ -456,6 +470,9 @@
       progress.phaseResults.push({ key: phase.key, score, targets: graded.targets, summary: graded.summary, answers });
       progress.phaseIdx += 1;
       State.saveHellProgress(progress);
+
+      // Cheat discovery: Hell phase context
+      tryUnlockCheats({ trigger: "hell-phase", mode: "hell", day: day.day, phaseIdx: progress.phaseIdx - 1, score });
 
       const isLast = progress.phaseIdx >= day.phases.length;
       const cls = score >= 80 ? "win" : score >= 50 ? "" : "fail";
@@ -742,6 +759,12 @@
       progress.phaseIdx += 1;
       State.saveApocalypseProgress(progress);
 
+      // Cheat discovery: Apocalypse phase context
+      tryUnlockCheats({ trigger: "apoc-phase", mode: "apocalypse", day: day.day, phaseIdx: progress.phaseIdx - 1, score });
+      // Day 13 = Essay 1 boss; Day 14 = Essay 2 boss — also emit essay context per phase
+      if (day.day === 13) tryUnlockCheats({ trigger: "essay1", score, mode: "apocalypse" });
+      if (day.day === 14) tryUnlockCheats({ trigger: "essay2", score, mode: "apocalypse" });
+
       const isLast = progress.phaseIdx >= day.phases.length;
       const cls = score >= 80 ? "win" : score >= 50 ? "" : "fail";
       const verdict = score >= 80 ? "Phase aced." : score >= 50 ? "Phase passed." : "Phase missed.";
@@ -787,6 +810,9 @@
         day: day.day, title: day.title, cashDelta, repDelta, summary,
         phaseScores: scores,
       });
+
+      // Cheat discovery: Apocalypse day completion (carries the avg)
+      tryUnlockCheats({ trigger: "apoc-day-complete", mode: "apocalypse", day: day.day, avgScore });
 
       const newState = State.bakery();
       ACHIEVEMENTS.forEach(a => {

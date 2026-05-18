@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cheatsheet Vault — Cat Society Bakery</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=JetBrains+Mono:wght@400;600&display=swap">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV" crossorigin="anonymous">
+  <link rel="stylesheet" href="../assets/css/style.css?v=8">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" integrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8" crossorigin="anonymous"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" integrity="sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05" crossorigin="anonymous"></script>
+</head>
+<body>
+  <div class="shell">
+    <header class="topbar">
+      <div>
+        <h1>📜 Cheatsheet Vault</h1>
+        <div class="crumbs">Discoverable tricks. Earn them by playing.</div>
+      </div>
+      <a class="home" href="../index.html">← Map</a>
+    </header>
+
+    <div id="progress-banner" class="card story" style="text-align:center;">
+      <div id="progress-summary"></div>
+    </div>
+
+    <div id="filters" class="vault-filters"></div>
+
+    <div id="vault-grid" class="vault-grid"></div>
+
+    <div class="card" style="margin-top:30px;">
+      <h3>How discovery works</h3>
+      <p style="color:var(--ink-soft);">Cheats unlock through gameplay. Some appear when you answer specific MCQs correctly. Others reveal themselves only after acing a particular phase, completing an essay, or maintaining a streak. There's no menu to grind — play the campaigns and notebooks naturally and the vault fills itself.</p>
+      <p style="color:var(--ink-soft);">Each unlocked cheat shows <strong>how you discovered it</strong> — a small narrative provenance that ties the trick back to the moment you earned it.</p>
+    </div>
+  </div>
+
+  <script type="module">
+    import { State } from "../assets/js/state.js?v=8";
+    import { CHEATS, CHEAT_BY_ID, CHEAT_CATEGORIES } from "../assets/js/data/cheatsheets.js?v=8";
+    import { isCheatUnlocked, unlockedCount, totalCheats } from "../assets/js/cheats.js?v=8";
+    import { typesetMath } from "../assets/js/chapter.js?v=8";
+
+    let activeCategory = "all";
+
+    function render() {
+      const unlocked = unlockedCount();
+      const total = totalCheats();
+      const pct = Math.round((unlocked / total) * 100);
+
+      document.getElementById("progress-summary").innerHTML = `
+        <div class="cat-line" style="justify-content:center;">
+          <span class="emoji">📜</span>
+          <div class="speech">
+            <span class="name">The Royal Librarian:</span>
+            You have unearthed <strong>${unlocked}/${total}</strong> cheats (${pct}%). Locked entries reveal themselves through gameplay — see the silhouettes below for vague clues. Play widely, not deeply, to fill the vault.
+          </div>
+        </div>
+      `;
+
+      // Filters: All + each category that has at least one cheat
+      const filters = document.getElementById("filters");
+      const cats = ["all", ...Object.keys(CHEAT_CATEGORIES)];
+      filters.innerHTML = cats.map(c => {
+        const count = c === "all" ? total : CHEATS.filter(ch => ch.category === c).length;
+        const unlockedHere = c === "all" ? unlocked : CHEATS.filter(ch => ch.category === c && isCheatUnlocked(ch.id)).length;
+        const label = c === "all" ? "All" : CHEAT_CATEGORIES[c].label;
+        return `<button class="vault-filter ${c === activeCategory ? "active" : ""}" data-cat="${c}">${label} <span class="count">${unlockedHere}/${count}</span></button>`;
+      }).join("");
+      filters.querySelectorAll(".vault-filter").forEach(btn => {
+        btn.addEventListener("click", () => { activeCategory = btn.dataset.cat; render(); });
+      });
+
+      // Grid
+      const grid = document.getElementById("vault-grid");
+      const filtered = activeCategory === "all" ? CHEATS : CHEATS.filter(c => c.category === activeCategory);
+      grid.innerHTML = filtered.map(c => {
+        const open = isCheatUnlocked(c.id);
+        const catInfo = CHEAT_CATEGORIES[c.category] || { label: c.category, color: "#888" };
+        if (open) {
+          return `
+            <div class="cheat-card unlocked">
+              <div class="cheat-cat" style="background:${catInfo.color}22; color:${catInfo.color}; border-color:${catInfo.color}">${catInfo.label}</div>
+              <div class="cheat-icon">${c.icon}</div>
+              <div class="cheat-title">${c.title}</div>
+              <div class="cheat-content">${c.content}</div>
+              <div class="cheat-provenance">📍 ${c.discoveryLine}</div>
+            </div>
+          `;
+        }
+        return `
+          <div class="cheat-card locked">
+            <div class="cheat-cat" style="background:rgba(255,255,255,0.05); color:var(--muted); border-color:var(--border-soft)">${catInfo.label}</div>
+            <div class="cheat-icon" style="filter:blur(8px);">${c.icon}</div>
+            <div class="cheat-title locked-title">🔒 Undiscovered</div>
+            <div class="cheat-hint">${c.lockedHint}</div>
+          </div>
+        `;
+      }).join("");
+      typesetMath(grid);
+    }
+
+    render();
+  </script>
+</body>
+</html>

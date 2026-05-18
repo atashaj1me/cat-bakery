@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=JetBrains+Mono:wght@400;600&display=swap">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV" crossorigin="anonymous">
-  <link rel="stylesheet" href="../assets/css/style.css?v=7">
+  <link rel="stylesheet" href="../assets/css/style.css?v=8">
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" integrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8" crossorigin="anonymous"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" integrity="sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05" crossorigin="anonymous"></script>
 </head>
@@ -50,13 +50,16 @@
     <h2>Three exam-style MCQs</h2>
     <div id="mcqs"></div>
 
+    <h2>📚 Pedagogical extras</h2>
+    <div id="extras"></div>
+
     <div id="mastery"></div>
   </div>
 
   <script type="module">
-    import { header, cat, readout, setReadout, mastery } from "../assets/js/chapter.js?v=7";
-    import { renderMCQSet } from "../assets/js/mcq.js?v=7";
-    import { CHAPTER_MCQS } from "../assets/js/data/mcqs.js?v=7";
+    import { header, cat, readout, setReadout, mastery , renderNotebookExtras} from "../assets/js/chapter.js?v=8";
+    import { renderMCQSet } from "../assets/js/mcq.js?v=8";
+    import { CHAPTER_MCQS } from "../assets/js/data/mcqs.js?v=8";
 
     header({ num: 5, title: "🍋 The Lemon Loaves" });
     document.getElementById("story").innerHTML = cat({
@@ -135,8 +138,11 @@
     };
 
     renderMCQSet(document.getElementById("mcqs"), CHAPTER_MCQS[5], {
+      chapterId: 5,
       onComplete: ({ pct }) => { mcqPct = pct; mcqDone = true; tryFinish(); },
     });
+
+    renderNotebookExtras("extras", 5);
   </script>
 </body>
 </html>

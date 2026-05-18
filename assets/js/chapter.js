@@ -126,3 +126,62 @@ export function pctOfOptimum(value, target, tolerance = 0.05) {
 export function near(value, target, tol = 0.5) {
   return Math.abs(value - target) <= tol;
 }
+
+/**
+ * Render the chapter's pedagogical extras (recipe, pitfalls, worked examples)
+ * into a host element. Each section is rendered as collapsible <details>.
+ */
+export async function renderNotebookExtras(hostId, chapterId) {
+  const host = document.getElementById(hostId);
+  if (!host) return;
+  let extras;
+  try {
+    const mod = await import("./data/notebook-extras.js");
+    extras = mod.NOTEBOOK_EXTRAS[chapterId];
+  } catch (_) { return; }
+  if (!extras) return;
+
+  let html = "";
+  if (extras.recipe) {
+    html += `
+      <details class="extra-section recipe" open>
+        <summary><span class="extra-icon">📋</span> ${extras.recipe.title}</summary>
+        <ol class="recipe-steps">
+          ${extras.recipe.steps.map(s => `<li>${s}</li>`).join("")}
+        </ol>
+        ${extras.recipe.note ? `<p class="recipe-note">💡 ${extras.recipe.note}</p>` : ""}
+      </details>
+    `;
+  }
+  if (extras.pitfalls?.length) {
+    html += `
+      <details class="extra-section pitfalls">
+        <summary><span class="extra-icon">⚠️</span> Common pitfalls (${extras.pitfalls.length})</summary>
+        <div class="pitfall-list">
+          ${extras.pitfalls.map(p => `
+            <div class="pitfall">
+              <div class="pitfall-headline">⚠️ ${p.headline}</div>
+              <div class="pitfall-body">${p.body}</div>
+            </div>
+          `).join("")}
+        </div>
+      </details>
+    `;
+  }
+  if (extras.workedExamples?.length) {
+    html += `
+      <details class="extra-section worked">
+        <summary><span class="extra-icon">📖</span> Worked examples (${extras.workedExamples.length})</summary>
+        ${extras.workedExamples.map(w => `
+          <div class="worked-example">
+            <h4>${w.title}</h4>
+            <p class="worked-prompt"><strong>Q.</strong> ${w.prompt}</p>
+            <div class="worked-solution"><strong>Solution:</strong> ${w.solution}</div>
+          </div>
+        `).join("")}
+      </details>
+    `;
+  }
+  host.innerHTML = html;
+  typesetMath(host);
+}

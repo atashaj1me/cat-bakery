@@ -4,8 +4,9 @@
 // On answer, it returns whether the answer was correct via opts.onAnswer.
 
 import { typesetMath } from "./chapter.js";
+import { tryUnlockCheats } from "./cheats.js";
 
-export function renderMCQ(container, q, { onAnswer, qIndex = 0, locked = false } = {}) {
+export function renderMCQ(container, q, { onAnswer, qIndex = 0, locked = false, chapterId = null } = {}) {
   const card = document.createElement("div");
   card.className = "mcq";
 
@@ -38,6 +39,8 @@ export function renderMCQ(container, q, { onAnswer, qIndex = 0, locked = false }
       expl.innerHTML = `<strong>${correct ? "✓ Correct." : "✗ Not quite."}</strong> ${q.explanation}`;
       card.appendChild(expl);
       typesetMath(expl);
+      // Cheat discovery: emit context on every answer (correct or not)
+      tryUnlockCheats({ trigger: "mcq", chapterId, mcqIdx: qIndex, correct });
       if (onAnswer) onAnswer(correct, i);
     });
     opts.appendChild(btn);
@@ -49,7 +52,7 @@ export function renderMCQ(container, q, { onAnswer, qIndex = 0, locked = false }
 }
 
 // Renders a set of MCQs and reports overall percentage when all answered.
-export function renderMCQSet(container, questions, { onComplete } = {}) {
+export function renderMCQSet(container, questions, { onComplete, chapterId = null } = {}) {
   let answered = 0;
   let correct = 0;
   const intro = document.createElement("p");
@@ -59,6 +62,7 @@ export function renderMCQSet(container, questions, { onComplete } = {}) {
   questions.forEach((q, idx) => {
     renderMCQ(container, q, {
       qIndex: idx,
+      chapterId,
       onAnswer: (isRight) => {
         answered += 1;
         if (isRight) correct += 1;

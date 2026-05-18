@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=JetBrains+Mono:wght@400;600&display=swap">
-  <link rel="stylesheet" href="assets/css/style.css?v=7">
+  <link rel="stylesheet" href="assets/css/style.css?v=8">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ctext y='52' font-size='52'%3E🥐%3C/text%3E%3C/svg%3E">
 </head>
 <body>
@@ -51,8 +51,15 @@
     </div>
 
     <h2>📚 Reference Notebooks</h2>
-    <p style="margin-top:-8px; color:var(--muted); font-size:0.95em;">Open these mid-campaign if a letter stumps you, or use them as a structured study path.</p>
+    <p style="margin-top:-8px; color:var(--muted); font-size:0.95em;">Each notebook now includes worked examples, pitfall callouts, and a step-by-step recipe — plus the simulator and MCQs you already know.</p>
     <div class="tile-grid" id="map"></div>
+
+    <h2>📜 Cheatsheet Vault</h2>
+    <a class="campaign-tile" href="chapters/vault.html" id="vault-tile" style="background: linear-gradient(135deg, #3a2418, #1d1108 80%); border-color: var(--accent); margin-bottom: 16px;">
+      <div class="lead">📜 Discover the bakery's secret recipes</div>
+      <div class="sub" id="vault-sub">A collection of exam-grade shortcuts, mnemonics, and traps. Each cheat is locked at first — they reveal themselves through gameplay. Ace the right MCQ, finish the right phase, complete the right essay, and a new card pops into your vault with a note explaining how you found it.</div>
+      <span class="cta" id="vault-cta">🔍 Open the vault</span>
+    </a>
 
     <h2>📔 Recent activity</h2>
     <div id="record" class="card"></div>
@@ -72,7 +79,7 @@
   </div>
 
   <script type="module">
-    import { State } from "./assets/js/state.js?v=7";
+    import { State } from "./assets/js/state.js?v=8";
 
     const CHAPTERS = [
       { id: 0, num: "Notebook 0", title: "Bakery Preparation", desc: "Consumer choice · production · profit max", file: "chapters/0-bakery-preparation.html" },
@@ -123,8 +130,14 @@
         <div class="kpi"><span class="label">🔮 Apoc Day</span><span class="value">${b.apocalypseDay}/16</span></div>
         <div class="kpi"><span class="label">🌑 Apoc Cash</span><span class="value ${b.apocalypseCash < 0 ? "bad" : b.apocalypseCash > 600 ? "good" : ""}">${b.apocalypseCash.toFixed(0)}</span></div>
       ` : ""}
+      <div class="kpi"><span class="label">📜 Cheats</span><span class="value">${(b.cheatsheets||[]).length}/<span id="cheats-total">?</span></span></div>
       <div class="kpi"><span class="label">🏆 Badges</span><span class="value">${b.achievements.length}/${ACHIEVEMENTS.length}</span></div>
     `;
+    // populate cheats total
+    import("./assets/js/data/cheatsheets.js?v=8").then(m => {
+      const el = document.getElementById("cheats-total");
+      if (el) el.textContent = m.CHEATS.length;
+    });
 
     // Vanilla campaign tile CTA
     const cta = document.getElementById("campaign-cta");
