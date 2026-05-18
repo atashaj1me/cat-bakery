@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=JetBrains+Mono:wght@400;600&display=swap">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV" crossorigin="anonymous">
-  <link rel="stylesheet" href="../assets/css/style.css?v=6">
+  <link rel="stylesheet" href="../assets/css/style.css?v=7">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ctext y='52' font-size='52'%3E🥐%3C/text%3E%3C/svg%3E">
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" integrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8" crossorigin="anonymous"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" integrity="sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05" crossorigin="anonymous"></script>
@@ -33,20 +33,22 @@
   </div>
 
   <script type="module">
-    import { State } from "../assets/js/state.js?v=6";
-    import { DAYS, getDay, flavorLine } from "../assets/js/data/days.js?v=6";
-    import { HELL_DAYS, getHellDay } from "../assets/js/data/days-hell.js?v=6";
-    import { CATS, purchase } from "../assets/js/data/cats.js?v=6";
-    import { TECHS, TECH_LIST, getTech, rollTech } from "../assets/js/data/technologies.js?v=6";
+    import { State } from "../assets/js/state.js?v=7";
+    import { DAYS, getDay, flavorLine } from "../assets/js/data/days.js?v=7";
+    import { HELL_DAYS, getHellDay } from "../assets/js/data/days-hell.js?v=7";
+    import { APOCALYPSE_DAYS, getApocalypseDay } from "../assets/js/data/days-apocalypse.js?v=7";
+    import { ARC_SCROLLS, NPC_INTERJECTIONS, MEMORY_TEMPLATES } from "../assets/js/data/lore-apocalypse.js?v=7";
+    import { CATS, purchase } from "../assets/js/data/cats.js?v=7";
+    import { TECHS, TECH_LIST, getTech, rollTech } from "../assets/js/data/technologies.js?v=7";
+    import { FINAL_MOCK, MOCK_REMEDIATION } from "../assets/js/data/mcqs.js?v=7";
 
     // --- mode detection from URL ---
     const urlParams = new URLSearchParams(window.location.search);
-    const MODE = urlParams.get("mode") === "hell" ? "hell" : "vanilla";
-    const HARD_TOTAL_DAYS = 14;
-    const SOFT_TOTAL_DAYS = 10;
-    const TOTAL_DAYS = MODE === "hell" ? HARD_TOTAL_DAYS : SOFT_TOTAL_DAYS;
-    const DAY_GETTER = MODE === "hell" ? getHellDay : getDay;
-    const DAY_LIST   = MODE === "hell" ? HELL_DAYS  : DAYS;
+    const raw_mode = urlParams.get("mode");
+    const MODE = raw_mode === "apocalypse" ? "apocalypse" : raw_mode === "hell" ? "hell" : "vanilla";
+    const TOTAL_DAYS = MODE === "apocalypse" ? 16 : MODE === "hell" ? 14 : 10;
+    const DAY_GETTER = MODE === "apocalypse" ? getApocalypseDay : MODE === "hell" ? getHellDay : getDay;
+    const DAY_LIST   = MODE === "apocalypse" ? APOCALYPSE_DAYS  : MODE === "hell" ? HELL_DAYS  : DAYS;
 
     State.setMode(MODE);
 
@@ -64,11 +66,20 @@
       { id: "hell-survivor",  label: "👹 Survived Hell Day 1", check: b => b.hellDaysCompleted.includes(1) },
       { id: "duopoly-master", label: "♟️ Aced Cournot night", check: b => b.hellDaysCompleted.includes(10) },
       { id: "hell-master",    label: "🔱 Hell Market certification", check: b => b.hellGraduated },
+      { id: "apoc-survivor",  label: "🌑 Survived the Doomsday Edict", check: b => (b.apocalypseDaysCompleted||[]).includes(1) },
+      { id: "apoc-master",    label: "🔮 Beyond Hell Master", check: b => b.apocalypseGraduated },
+      { id: "perfect-100",    label: "💯 Royal Examiner — 100/100 predicted",
+        check: b => b.apocalypseGraduated && (() => {
+          const last4 = (b.apocalypseLog||[]).slice(0,4);
+          if (last4.length < 4) return false;
+          const avg = last4.reduce((s,e) => s + ((e.phaseScores||[]).reduce((a,x)=>a+x,0)/Math.max(1,(e.phaseScores||[]).length)), 0)/4;
+          return avg >= 95;
+        })() },
     ];
 
     function computeStreak(b) {
       let streak = 0;
-      const log = MODE === "hell" ? (b.hellLog || []) : (b.log || []);
+      const log = MODE === "apocalypse" ? (b.apocalypseLog || []) : MODE === "hell" ? (b.hellLog || []) : (b.log || []);
       for (const e of log) {
         if (e.repDelta > 0) streak += 1;
         else break;
@@ -89,18 +100,18 @@
     }
 
     // ---- accessors that route based on mode ----
-    function currentDay(b)  { return MODE === "hell" ? b.hellDay : b.day; }
-    function isGraduated(b) { return MODE === "hell" ? b.hellGraduated : b.graduated; }
-    function currentCash(b) { return MODE === "hell" ? b.hellCash : b.cash; }
-    function currentRep(b)  { return MODE === "hell" ? b.hellReputation : b.reputation; }
-    function currentDays(b) { return MODE === "hell" ? b.hellDaysCompleted : b.daysCompleted; }
-    function currentLog(b)  { return MODE === "hell" ? b.hellLog : b.log; }
-    function loanCount(b)   { return MODE === "hell" ? b.hellLoansTaken : b.loansTaken; }
-    function takeLoan()     { return MODE === "hell" ? State.takeHellLoan(100) : State.takeLoan(50); }
+    function currentDay(b)  { return MODE === "apocalypse" ? b.apocalypseDay : MODE === "hell" ? b.hellDay : b.day; }
+    function isGraduated(b) { return MODE === "apocalypse" ? b.apocalypseGraduated : MODE === "hell" ? b.hellGraduated : b.graduated; }
+    function currentCash(b) { return MODE === "apocalypse" ? b.apocalypseCash : MODE === "hell" ? b.hellCash : b.cash; }
+    function currentRep(b)  { return MODE === "apocalypse" ? b.apocalypseReputation : MODE === "hell" ? b.hellReputation : b.reputation; }
+    function currentDays(b) { return MODE === "apocalypse" ? (b.apocalypseDaysCompleted||[]) : MODE === "hell" ? b.hellDaysCompleted : b.daysCompleted; }
+    function currentLog(b)  { return MODE === "apocalypse" ? (b.apocalypseLog||[]) : MODE === "hell" ? b.hellLog : b.log; }
+    function loanCount(b)   { return MODE === "apocalypse" ? b.apocalypseLoansTaken : MODE === "hell" ? b.hellLoansTaken : b.loansTaken; }
+    function takeLoan()     { return MODE === "apocalypse" ? State.takeApocalypseLoan(200) : MODE === "hell" ? State.takeHellLoan(100) : State.takeLoan(50); }
 
     function renderHeader(b) {
       const root = document.querySelector("header.topbar");
-      const title = MODE === "hell" ? "🔱 Surviving Hell Market" : "🏪 Master Baker";
+      const title = MODE === "apocalypse" ? "🔮 Beyond Hell: Apocalypse" : MODE === "hell" ? "🔱 Surviving Hell Market" : "🏪 Master Baker";
       const crumbs = isGraduated(b) ? "Certified — Royal Examination awaits" : `Day ${currentDay(b)} of ${TOTAL_DAYS}`;
       root.innerHTML = `
         <div>
@@ -113,7 +124,8 @@
 
     function renderProgress(b) {
       const track = document.getElementById("progress");
-      track.className = "progress-track" + (MODE === "hell" ? " hell" : "");
+      track.className = "progress-track" + (MODE === "apocalypse" ? " apocalypse" : MODE === "hell" ? " hell" : "");
+      track.style.gridTemplateColumns = `repeat(${TOTAL_DAYS}, 1fr)`;
       track.innerHTML = "";
       for (let i = 1; i <= TOTAL_DAYS; i++) {
         const pip = document.createElement("div");
@@ -140,8 +152,9 @@
     function renderDashboard(b) {
       const earnedAch = ACHIEVEMENTS.filter(a => b.achievements.includes(a.id)).length;
       const tech = currentTech(b);
+      const modeBadge = MODE === "apocalypse" ? "🔮 Apocalypse" : MODE === "hell" ? "🔱 Hell" : "🏪 Vanilla";
       document.getElementById("dashboard").innerHTML = `
-        <div class="kpi"><span class="label">Mode</span><span class="value">${MODE === "hell" ? "🔱 Hell" : "🏪 Vanilla"}</span></div>
+        <div class="kpi"><span class="label">Mode</span><span class="value">${modeBadge}</span></div>
         <div class="kpi"><span class="label">Day</span><span class="value">${currentDay(b)}/${TOTAL_DAYS}</span></div>
         <div class="kpi"><span class="label">💰 Cash</span><span class="value ${currentCash(b) < 0 ? "bad" : currentCash(b) > 300 ? "good" : ""}">${currentCash(b).toFixed(0)}</span></div>
         <div class="kpi"><span class="label">⭐ Rep</span><span class="value">${currentRep(b).toFixed(1)}/5</span></div>
@@ -511,6 +524,442 @@
       else if (avg < 40) toast("Hell hurts. Open a notebook.", "bad", `Hell Day ${day.day}`);
     }
 
+    // ============== APOCALYPSE RENDERER (phased + timed + scrolls + choices + MCQ blitz) ==============
+    let apocTimerHandle = null;
+    function clearApocTimer() { if (apocTimerHandle) { clearInterval(apocTimerHandle); apocTimerHandle = null; } }
+
+    function renderDayApocalypse(b) {
+      const host = document.getElementById("day-host");
+      host.innerHTML = "";
+      clearApocTimer();
+
+      if (b.apocalypseGraduated) {
+        host.innerHTML = `
+          <div class="consequence-banner win" style="text-align:center; font-size:1.05em;">
+            🔮 <strong>You are now a Master Examiner.</strong><br>
+            All sixteen days survived. The Royal Examination Bureau has signed your certificate.
+            <p style="margin-top:14px;">
+              <a class="bigbtn" style="display:inline-block;" href="final-mock.html">🏛️ Take the Royal Exam (one more time, for record) →</a>
+            </p>
+            <p><small><button class="ghost small" id="apoc-restart">Restart Apocalypse campaign</button></small></p>
+          </div>
+        `;
+        document.getElementById("apoc-restart")?.addEventListener("click", () => {
+          if (confirm("Restart Apocalypse? (Vanilla, Hell, and chapter scores preserved.)")) {
+            State.resetApocalypse(); location.reload();
+          }
+        });
+        return;
+      }
+
+      const day = getApocalypseDay(b.apocalypseDay);
+      if (!day) { host.innerHTML = `<div class="card">No data for Apocalypse Day ${b.apocalypseDay}.</div>`; return; }
+
+      const progress = (b.apocalypseInProgress && b.apocalypseInProgress.day === day.day)
+        ? b.apocalypseInProgress
+        : { day: day.day, phaseIdx: 0, phaseResults: [], lateRepLoss: 0 };
+
+      // MCQ blitz day uses its own renderer
+      if (day.isBlitz) { renderApocBlitz(b, day, progress); return; }
+
+      renderApocPhase(b, day, progress);
+    }
+
+    function renderApocPhase(b, day, progress) {
+      const host = document.getElementById("day-host");
+      const phaseIdx = progress.phaseIdx;
+      const phase = day.phases[phaseIdx];
+      const letter = day.letter();
+      const completedScores = progress.phaseResults.map(r => r.score);
+
+      // arc scroll (only at start of arc day, only on Phase 0)
+      const scroll = (day.arcScroll && phaseIdx === 0) ? ARC_SCROLLS[day.day] : null;
+
+      // memory callback (only on Phase 0)
+      let memory = null;
+      if (phaseIdx === 0 && MEMORY_TEMPLATES[day.day]) {
+        const log = b.apocalypseLog || [];
+        const scoreByDay = {};
+        log.forEach(e => {
+          const avg = (e.phaseScores||[]).reduce((s,x)=>s+x,0) / Math.max(1, (e.phaseScores||[]).length);
+          scoreByDay[e.day] = avg;
+        });
+        const allScores = Object.values(scoreByDay);
+        const overallAvg = allScores.length ? allScores.reduce((s,x)=>s+x,0)/allScores.length : null;
+        const lowestEntry = Object.entries(scoreByDay).sort((a,b)=>a[1]-b[1])[0];
+        const ctx = {
+          d2score: scoreByDay[2], d4score: scoreByDay[4],
+          d6score: scoreByDay[6], d9score: scoreByDay[9],
+          avg: overallAvg,
+          lowestDay: lowestEntry ? +lowestEntry[0] : null,
+          lowestScore: lowestEntry ? lowestEntry[1] : null,
+        };
+        memory = MEMORY_TEMPLATES[day.day](ctx);
+      }
+
+      // NPC interjection (random one for this day, on Phase 0)
+      let npc = null;
+      if (phaseIdx === 0 && NPC_INTERJECTIONS[day.day]) {
+        const opts = NPC_INTERJECTIONS[day.day];
+        npc = opts[Math.floor(Math.random() * opts.length)];
+      }
+
+      const isChoice = phase.type === "choice";
+      const timeBudget = phase.timeSec || 90;
+
+      host.innerHTML = `
+        <h2 style="margin-top:18px;">🔮 Apocalypse Day ${day.day} — ${day.title}</h2>
+
+        ${scroll ? `
+          <div class="arc-scroll">
+            <div class="arc-cinematic">${scroll.cinematic}</div>
+            <h3 style="margin-top:0; color:var(--accent);">${scroll.title}</h3>
+            ${scroll.body}
+          </div>
+        ` : ""}
+
+        <div class="phase-chip-row">
+          ${day.phases.map((p, i) => `
+            <span class="phase-chip ${i < phaseIdx ? "done" : i === phaseIdx ? "active" : ""}">
+              ${i < phaseIdx ? `✓ ${Math.round(completedScores[i] || 0)}` : i === phaseIdx ? "▶" : "○"}&nbsp;${p.title.split("—")[0].trim()}
+            </span>
+          `).join("")}
+        </div>
+
+        ${phaseIdx === 0 ? `
+          <div class="letter">
+            <div class="from">${letter.from}</div>
+            <div class="body">${letter.body}</div>
+          </div>` : ""}
+
+        ${memory ? `<div class="memory-callback">📖 ${memory}</div>` : ""}
+        ${npc ? `<div class="bubble" style="display:block; max-width:600px; margin:10px 0; padding:10px 14px; font-size:0.95em;">${npc.who}: <em>"${npc.line}"</em></div>` : ""}
+
+        <div class="card">
+          <h3>${phase.title}</h3>
+          <div class="phase-timer" id="phase-timer">⏱️ ${Math.floor(timeBudget/60)}:${(timeBudget%60).toString().padStart(2,"0")} target</div>
+          ${phase.narrative ? `<p style="color:var(--ink-soft); font-style:italic;">${phase.narrative}</p>` : ""}
+          ${isChoice ? `
+            <div class="choice-options">
+              ${phase.fields[0].options.map((opt, i) => `
+                <label class="choice-option">
+                  <input type="radio" name="apoc-choice" value="${i}">
+                  <span>${opt}</span>
+                </label>
+              `).join("")}
+            </div>
+          ` : `
+            ${phase.fields.map((f, i) => `
+              <div class="field-row">
+                <div>
+                  <label for="af-${f.id}">${f.label}</label>
+                  <span class="hint-text">tolerance ±${f.tol}${f.hint ? ` · 🐾 ${f.hint}` : ""}</span>
+                </div>
+                <input id="af-${f.id}" type="number" step="0.0001" class="cell" placeholder="number" inputmode="decimal" ${i === 0 ? "autofocus" : ""}>
+              </div>
+            `).join("")}
+          `}
+          <button id="asubmit" class="bigbtn">📤 Send Phase ${phaseIdx + 1} →</button>
+        </div>
+        <div id="consequence"></div>
+      `;
+
+      // Wire submit + Enter-to-submit
+      const submitFn = () => submitApocPhase(b, day, progress, letter, phase);
+      document.getElementById("asubmit").addEventListener("click", submitFn);
+      if (isChoice) {
+        document.querySelectorAll('input[name="apoc-choice"]').forEach(el => {
+          el.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); submitFn(); } });
+        });
+      } else {
+        document.querySelectorAll(".field-row input").forEach(inp => {
+          inp.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); submitFn(); } });
+        });
+        const first = document.querySelector(".field-row input");
+        if (first) setTimeout(() => first.focus(), 100);
+      }
+
+      // Start the soft per-phase timer
+      let remaining = timeBudget;
+      const timerEl = document.getElementById("phase-timer");
+      apocTimerHandle = setInterval(() => {
+        remaining -= 1;
+        const sign = remaining < 0 ? "−" : "";
+        const abs = Math.abs(remaining);
+        const m = Math.floor(abs / 60).toString().padStart(2,"0");
+        const s = (abs % 60).toString().padStart(2,"0");
+        timerEl.textContent = `⏱️ ${sign}${m}:${s}${remaining < 0 ? " (over budget, rep -0.1/30s)" : ""}`;
+        if (remaining <= 10 && remaining > 0) timerEl.classList.add("warn");
+        if (remaining <= 0) {
+          timerEl.classList.remove("warn");
+          timerEl.classList.add("crit");
+          if (remaining % 30 === 0) {
+            progress.lateRepLoss = (progress.lateRepLoss || 0) + 0.1;
+          }
+        }
+      }, 1000);
+
+      typesetMath();
+    }
+
+    function submitApocPhase(b, day, progress, letter, phase) {
+      clearApocTimer();
+      const isChoice = phase.type === "choice";
+      const answers = {};
+      const missing = [];
+
+      if (isChoice) {
+        const picked = document.querySelector('input[name="apoc-choice"]:checked');
+        if (!picked) {
+          const c = document.getElementById("consequence");
+          c.innerHTML = `<div class="consequence-banner fail">⚠️ Pick an option, then send.</div>`;
+          // restart timer for the player
+          renderApocPhase(b, day, progress);
+          return;
+        }
+        answers[phase.fields[0].id] = parseInt(picked.value, 10);
+      } else {
+        phase.fields.forEach(f => {
+          const el = document.getElementById("af-" + f.id);
+          const v = parseFloat(el.value);
+          answers[f.id] = v;
+          if (!isFinite(v)) { missing.push(f.label); el.classList.add("wrong"); }
+          else el.classList.remove("wrong");
+        });
+        if (missing.length) {
+          const c = document.getElementById("consequence");
+          c.innerHTML = `<div class="consequence-banner fail">⚠️ Fill: <strong>${missing.join(", ")}</strong>.</div>`;
+          renderApocPhase(b, day, progress);   // re-render to restart the timer
+          return;
+        }
+      }
+
+      const prior = progress.phaseResults.map(r => r.targets);
+      const graded = phase.grade(letter, answers, prior);
+      const score = graded.scoreEach(answers);
+
+      progress.phaseResults.push({ key: phase.key, score, targets: graded.targets, summary: graded.summary, answers });
+      progress.phaseIdx += 1;
+      State.saveApocalypseProgress(progress);
+
+      const isLast = progress.phaseIdx >= day.phases.length;
+      const cls = score >= 80 ? "win" : score >= 50 ? "" : "fail";
+      const verdict = score >= 80 ? "Phase aced." : score >= 50 ? "Phase passed." : "Phase missed.";
+
+      const c = document.getElementById("consequence");
+      c.innerHTML = `
+        <div class="consequence-banner ${cls}">
+          <strong>${verdict}</strong> Phase score: ${Math.round(score)}/100
+          ${progress.lateRepLoss ? ` · ⏱️ overtime rep loss so far: -${progress.lateRepLoss.toFixed(1)}` : ""}
+        </div>
+        <div class="card">
+          <h3>What the books say</h3>
+          <p>${graded.summary}</p>
+        </div>
+        <p style="text-align:center; margin-top:18px;">
+          ${isLast
+            ? `<button id="afinalize" class="bigbtn" style="max-width:340px; margin:0 auto;">🌙 Close the day & sleep →</button>`
+            : `<button id="anext" class="bigbtn" style="max-width:340px; margin:0 auto;">▶ Continue to Phase ${progress.phaseIdx + 1} →</button>`
+          }
+        </p>
+      `;
+      const sbtn = document.getElementById("asubmit"); if (sbtn) sbtn.disabled = true;
+
+      if (isLast) document.getElementById("afinalize").addEventListener("click", () => finalizeApocDay(day, progress));
+      else document.getElementById("anext").addEventListener("click", () => {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+        renderApocPhase(State.bakery(), day, progress);
+      });
+      typesetMath();
+      c.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+
+    function finalizeApocDay(day, progress) {
+      const scores = progress.phaseResults.map(r => r.score);
+      const avgScore = scores.reduce((s, x) => s + x, 0) / Math.max(1, scores.length);
+      const cashDelta = Math.round((avgScore - 50) * 1.5);
+      let repDelta = avgScore >= 90 ? 0.4 : avgScore >= 70 ? 0.2 : avgScore >= 50 ? 0 : -0.35;
+      repDelta -= (progress.lateRepLoss || 0);
+
+      const summary = `Phases avg: ${avgScore.toFixed(0)}/100. ${progress.phaseResults.map((r, i) => `Phase ${i+1}: ${Math.round(r.score)}`).join(" · ")}${progress.lateRepLoss ? ` · overtime -${progress.lateRepLoss.toFixed(1)}` : ""}`;
+
+      State.applyApocalypseDayResult({
+        day: day.day, title: day.title, cashDelta, repDelta, summary,
+        phaseScores: scores,
+      });
+
+      const newState = State.bakery();
+      ACHIEVEMENTS.forEach(a => {
+        if (!newState.achievements.includes(a.id) && a.check(newState, newState.apocalypseLog[0])) {
+          if (State.awardAchievement(a.id)) toast(a.label, "win", "🏆 Achievement!");
+        }
+      });
+
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      render();
+
+      if (avgScore >= 90) toast("Apocalypse day mastered.", "win", `Day ${day.day} ✓`);
+      else if (avgScore < 40) toast("Pain.", "bad", `Day ${day.day}`);
+    }
+
+    // ---- Day 15 MCQ blitz ----
+    let blitzState = null;
+    function renderApocBlitz(b, day, progress) {
+      const host = document.getElementById("day-host");
+      const letter = day.letter();
+
+      host.innerHTML = `
+        <h2 style="margin-top:18px;">🔮 Apocalypse Day ${day.day} — ${day.title}</h2>
+        <div class="letter">
+          <div class="from">${letter.from}</div>
+          <div class="body">${letter.body}</div>
+        </div>
+        <div id="blitz-host"></div>
+      `;
+
+      if (!blitzState || blitzState.day !== day.day) {
+        // Pick 15 questions: use all of FINAL_MOCK (which is already 15)
+        blitzState = {
+          day: day.day,
+          startTime: null,
+          remainingSec: day.timeSec || (30 * 60),
+          answers: new Array(FINAL_MOCK.length).fill(null),
+          submitted: false,
+        };
+      }
+
+      const blitzHost = document.getElementById("blitz-host");
+      if (blitzState.startTime === null) {
+        blitzHost.innerHTML = `
+          <div class="card" style="text-align:center;">
+            <h3>Ready?</h3>
+            <p>Fifteen MCQs · ${Math.floor(blitzState.remainingSec/60)} minutes · auto-submit on timeout.</p>
+            <button id="blitz-start" class="bigbtn" style="max-width:300px; margin:0 auto;">▶ Start the clock</button>
+          </div>
+        `;
+        document.getElementById("blitz-start").addEventListener("click", () => {
+          blitzState.startTime = Date.now();
+          renderBlitzActive(day);
+        });
+      } else {
+        renderBlitzActive(day);
+      }
+    }
+
+    function renderBlitzActive(day) {
+      const blitzHost = document.getElementById("blitz-host");
+      blitzHost.innerHTML = `
+        <div class="card">
+          <div class="phase-timer" id="blitz-timer">⏱️ —</div>
+          <p style="color:var(--ink-soft);">Pick one option per question. The page will auto-submit when the timer hits zero.</p>
+          <div id="blitz-questions"></div>
+          <button id="blitz-submit" class="bigbtn">📤 Submit early →</button>
+        </div>
+        <div id="blitz-result"></div>
+      `;
+      const qHost = document.getElementById("blitz-questions");
+      qHost.innerHTML = FINAL_MOCK.map((q, idx) => `
+        <div class="mcq">
+          <h4>Q${idx + 1}. ${q.prompt}</h4>
+          <div class="options">
+            ${q.options.map((opt, i) => `
+              <label class="choice-option" style="display:block;">
+                <input type="radio" name="blitz-q${idx}" value="${i}" ${blitzState.answers[idx] === i ? "checked" : ""}>
+                <span>${String.fromCharCode(65 + i)}. ${opt}</span>
+              </label>
+            `).join("")}
+          </div>
+        </div>
+      `).join("");
+      typesetMath();
+
+      // Wire answer tracking
+      FINAL_MOCK.forEach((q, idx) => {
+        document.querySelectorAll(`input[name="blitz-q${idx}"]`).forEach(el => {
+          el.addEventListener("change", e => { blitzState.answers[idx] = parseInt(e.target.value, 10); });
+        });
+      });
+
+      // Timer
+      clearApocTimer();
+      const timerEl = document.getElementById("blitz-timer");
+      apocTimerHandle = setInterval(() => {
+        const elapsed = Math.floor((Date.now() - blitzState.startTime) / 1000);
+        const remaining = blitzState.remainingSec - elapsed;
+        if (remaining <= 0) {
+          clearApocTimer();
+          finalizeBlitz(day);
+          return;
+        }
+        const m = Math.floor(remaining / 60).toString().padStart(2, "0");
+        const s = (remaining % 60).toString().padStart(2, "0");
+        timerEl.textContent = `⏱️ ${m}:${s} remaining`;
+        if (remaining <= 60) timerEl.classList.add("crit");
+        else if (remaining <= 5 * 60) timerEl.classList.add("warn");
+      }, 1000);
+
+      document.getElementById("blitz-submit").addEventListener("click", () => {
+        if (confirm("Submit blitz now?")) { clearApocTimer(); finalizeBlitz(day); }
+      });
+    }
+
+    function finalizeBlitz(day) {
+      if (blitzState.submitted) return;
+      blitzState.submitted = true;
+      const correct = blitzState.answers.map((a, i) => a === FINAL_MOCK[i].answer);
+      const numCorrect = correct.filter(Boolean).length;
+      const blitzScore = Math.round((numCorrect / FINAL_MOCK.length) * 100);
+
+      // Apply as a day result with one "phase" score
+      const cashDelta = Math.round((blitzScore - 50) * 1.5);
+      const repDelta = blitzScore >= 90 ? 0.4 : blitzScore >= 70 ? 0.2 : blitzScore >= 50 ? 0 : -0.35;
+      const summary = `MCQ blitz: ${numCorrect}/${FINAL_MOCK.length} correct (${blitzScore}/100).`;
+
+      State.applyApocalypseDayResult({
+        day: day.day, title: day.title, cashDelta, repDelta, summary,
+        phaseScores: [blitzScore],
+      });
+
+      const newState = State.bakery();
+      ACHIEVEMENTS.forEach(a => {
+        if (!newState.achievements.includes(a.id) && a.check(newState, newState.apocalypseLog[0])) {
+          if (State.awardAchievement(a.id)) toast(a.label, "win", "🏆 Achievement!");
+        }
+      });
+
+      const result = document.getElementById("blitz-result");
+      result.innerHTML = `
+        <div class="consequence-banner ${blitzScore >= 80 ? "win" : blitzScore >= 50 ? "" : "fail"}">
+          <strong>Blitz complete.</strong> Score: ${numCorrect}/${FINAL_MOCK.length} (${blitzScore}/100).
+        </div>
+        <div class="card">
+          <h3>Per-question review</h3>
+          <table class="essay-table">
+            <thead><tr><th>Q</th><th>Tag</th><th>Your answer</th><th>Correct</th><th>Practice</th></tr></thead>
+            <tbody>
+              ${FINAL_MOCK.map((q, i) => {
+                const yours = blitzState.answers[i] == null ? "—" : String.fromCharCode(65 + blitzState.answers[i]);
+                const right = String.fromCharCode(65 + q.answer);
+                const ok = correct[i];
+                const chap = MOCK_REMEDIATION[i];
+                const link = chap != null ? `<a href="${chap === 0 ? "0-bakery-preparation" : chap === 1 ? "1-market-day" : chap === 2 ? "2-sugar-tax" : chap === 3 ? "3-tariffs" : chap === 4 ? "4-oven-smoke" : chap === 5 ? "5-lemon-loaves" : "6-monopoly"}.html">Chapter ${chap}</a>` : "—";
+                return `<tr style="background:${ok ? "rgba(155,196,118,0.10)" : "rgba(224,140,110,0.10)"}">
+                  <td>${i + 1}</td><td>${q.tag || ""}</td><td>${yours}</td><td>${right}</td><td>${ok ? "✓" : link}</td>
+                </tr>`;
+              }).join("")}
+            </tbody>
+          </table>
+        </div>
+        <p style="text-align:center; margin-top:18px;">
+          <button id="blitz-next" class="bigbtn" style="max-width:340px; margin:0 auto;">🌙 Sleep until Day ${day.day + 1} →</button>
+        </p>
+      `;
+      typesetMath();
+      result.scrollIntoView({ behavior: "smooth", block: "start" });
+      blitzState = null; // clear so a replay restarts cleanly
+      document.getElementById("blitz-next").addEventListener("click", () => { window.scrollTo({top:0}); render(); });
+    }
+
     function buildQueue(day) {
       const rosters = {
         1: ["penny", "engineer"], 2: ["penny", "tim"], 3: ["penny", "engineer", "tim"],
@@ -640,7 +1089,7 @@
     function render() {
       try {
         const b = State.bakery();
-        // Hell mode requires vanilla graduation
+        // Hell mode requires Vanilla graduation
         if (MODE === "hell" && !b.graduated) {
           document.getElementById("day-host").innerHTML = `
             <div class="errpanel">
@@ -651,15 +1100,27 @@
           renderHeader(b); renderDashboard(b); renderProgress(b); renderScene(b);
           return;
         }
+        // Apocalypse requires Hell graduation
+        if (MODE === "apocalypse" && !b.hellGraduated) {
+          document.getElementById("day-host").innerHTML = `
+            <div class="errpanel">
+              🔒 <strong>Beyond Hell: Apocalypse is locked.</strong>
+              <br><br>Graduate Hell Market (complete Day 14) before entering.
+              <br><br><a class="ghost small" href="daily.html?mode=hell" style="display:inline-block; padding:8px 14px; border-radius:6px; text-decoration:none; background:var(--paper); border:1px solid var(--border); color:var(--accent);">→ Open Hell Market</a>
+            </div>`;
+          renderHeader(b); renderDashboard(b); renderProgress(b); renderScene(b);
+          return;
+        }
         renderHeader(b); renderProgress(b); renderScene(b); renderDashboard(b);
         // Slot machine if no technology rolled for this campaign yet
-        const techId = MODE === "hell" ? b.hellTech : b.tech;
+        const techId = MODE === "apocalypse" ? b.apocalypseTech : MODE === "hell" ? b.hellTech : b.tech;
         if (!techId && !isGraduated(b)) {
           renderSlotMachine();
           renderLogbook(b); renderAchievements(b);
           return;
         }
-        if (MODE === "hell") renderDayHell(b);
+        if (MODE === "apocalypse") renderDayApocalypse(b);
+        else if (MODE === "hell") renderDayHell(b);
         else renderDayVanilla(b);
         renderLogbook(b); renderAchievements(b);
       } catch (e) {

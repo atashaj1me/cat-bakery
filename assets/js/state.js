@@ -5,7 +5,8 @@
 //   2) Vanilla campaign — added in v2 (bakery.*).
 //   3) Hell Market campaign — added in v3 (bakery.hell*).
 
-const KEY = "catBakery.v4";
+const KEY = "catBakery.v5";
+const V4_KEY = "catBakery.v4";
 const V3_KEY = "catBakery.v3";
 const V2_KEY = "catBakery.v2";
 const V1_KEY = "catBakery.v1";
@@ -33,6 +34,16 @@ const DEFAULT_BAKERY = {
   hellInProgress: null,    // {day, phaseIdx, phaseResults: [{score, summary}]}
   hellLoansTaken: 0,
   hellTech: null,          // separate tech roll for Hell campaign
+  // ---- Beyond Hell: Apocalypse ----
+  apocalypseCash: 400,
+  apocalypseReputation: 3.0,
+  apocalypseDay: 1,
+  apocalypseDaysCompleted: [],
+  apocalypseLog: [],
+  apocalypseGraduated: false,
+  apocalypseInProgress: null,
+  apocalypseLoansTaken: 0,
+  apocalypseTech: null,
 };
 
 const DEFAULT_STATE = {
@@ -48,30 +59,19 @@ function read() {
   try {
     let raw = localStorage.getItem(KEY);
     if (!raw) {
-      // Cascading migration: v3 → v4 → v2 → v1 fallbacks
-      const v3raw = localStorage.getItem(V3_KEY);
-      if (v3raw) {
-        const v3 = JSON.parse(v3raw);
-        const migrated = { ...structuredClone(DEFAULT_STATE), ...v3,
-          bakery: { ...structuredClone(DEFAULT_BAKERY), ...(v3.bakery || {}) } };
+      // Cascading migration: v4 → v5 → v3 → v2 → v1 fallbacks
+      const tryMigrate = (key) => {
+        const r = localStorage.getItem(key);
+        if (!r) return null;
+        const parsed = JSON.parse(r);
+        const migrated = { ...structuredClone(DEFAULT_STATE), ...parsed,
+          bakery: { ...structuredClone(DEFAULT_BAKERY), ...(parsed.bakery || {}) } };
         localStorage.setItem(KEY, JSON.stringify(migrated));
         return migrated;
-      }
-      const v2raw = localStorage.getItem(V2_KEY);
-      if (v2raw) {
-        const v2 = JSON.parse(v2raw);
-        const migrated = { ...structuredClone(DEFAULT_STATE), ...v2,
-          bakery: { ...structuredClone(DEFAULT_BAKERY), ...(v2.bakery || {}) } };
-        localStorage.setItem(KEY, JSON.stringify(migrated));
-        return migrated;
-      }
-      const v1raw = localStorage.getItem(V1_KEY);
-      if (v1raw) {
-        const v1 = JSON.parse(v1raw);
-        const migrated = { ...structuredClone(DEFAULT_STATE), ...v1 };
-        migrated.bakery = structuredClone(DEFAULT_BAKERY);
-        localStorage.setItem(KEY, JSON.stringify(migrated));
-        return migrated;
+      };
+      for (const key of [V4_KEY, V3_KEY, V2_KEY, V1_KEY]) {
+        const m = tryMigrate(key);
+        if (m) return m;
       }
       return structuredClone(DEFAULT_STATE);
     }
@@ -161,6 +161,7 @@ export const State = {
   setTech(mode, techId) {
     const s = read();
     if (mode === "hell") s.bakery.hellTech = techId;
+    else if (mode === "apocalypse") s.bakery.apocalypseTech = techId;
     else s.bakery.tech = techId;
     write(s);
   },
@@ -201,7 +202,7 @@ export const State = {
 
   resetBakery() {
     const s = read();
-    // Reset Vanilla only — keep Hell state and mode flag.
+    // Reset Vanilla only — keep Hell, Apocalypse, and achievements.
     const base = structuredClone(DEFAULT_BAKERY);
     s.bakery = {
       ...base,
@@ -211,6 +212,11 @@ export const State = {
       hellLog: s.bakery.hellLog, hellGraduated: s.bakery.hellGraduated,
       hellInProgress: s.bakery.hellInProgress, hellLoansTaken: s.bakery.hellLoansTaken,
       hellTech: s.bakery.hellTech,
+      apocalypseCash: s.bakery.apocalypseCash, apocalypseReputation: s.bakery.apocalypseReputation,
+      apocalypseDay: s.bakery.apocalypseDay, apocalypseDaysCompleted: s.bakery.apocalypseDaysCompleted,
+      apocalypseLog: s.bakery.apocalypseLog, apocalypseGraduated: s.bakery.apocalypseGraduated,
+      apocalypseInProgress: s.bakery.apocalypseInProgress, apocalypseLoansTaken: s.bakery.apocalypseLoansTaken,
+      apocalypseTech: s.bakery.apocalypseTech,
       achievements: s.bakery.achievements,
     };
     write(s);
@@ -268,8 +274,60 @@ export const State = {
     write(s);
   },
 
+  // ----- bakery: Beyond Hell — Apocalypse -----
+  saveApocalypseProgress(progress) {
+    const s = read();
+    s.bakery.apocalypseInProgress = progress;
+    write(s);
+  },
+
+  clearApocalypseProgress() {
+    const s = read();
+    s.bakery.apocalypseInProgress = null;
+    write(s);
+  },
+
+  applyApocalypseDayResult({ day, title, cashDelta, repDelta, summary, phaseScores }) {
+    const s = read();
+    s.bakery.apocalypseCash = Math.round((s.bakery.apocalypseCash + cashDelta) * 100) / 100;
+    s.bakery.apocalypseReputation = Math.max(0, Math.min(5,
+      Math.round((s.bakery.apocalypseReputation + repDelta) * 10) / 10));
+    if (!s.bakery.apocalypseDaysCompleted.includes(day)) s.bakery.apocalypseDaysCompleted.push(day);
+    s.bakery.apocalypseLog.unshift({ day, title, cashDelta, repDelta, summary, phaseScores,
+      when: new Date().toISOString().slice(0, 16).replace("T", " ") });
+    s.bakery.apocalypseLog = s.bakery.apocalypseLog.slice(0, 30);
+    if (s.bakery.apocalypseDay < day + 1 && day < 16) s.bakery.apocalypseDay = day + 1;
+    if (day === 16) s.bakery.apocalypseGraduated = true;
+    s.bakery.apocalypseInProgress = null;
+    write(s);
+    return s.bakery;
+  },
+
+  takeApocalypseLoan(amount = 200) {
+    const s = read();
+    s.bakery.apocalypseCash += amount;
+    s.bakery.apocalypseLoansTaken += 1;
+    write(s);
+  },
+
+  resetApocalypse() {
+    const s = read();
+    s.bakery.apocalypseCash = 400;
+    s.bakery.apocalypseReputation = 3.0;
+    s.bakery.apocalypseDay = 1;
+    s.bakery.apocalypseDaysCompleted = [];
+    s.bakery.apocalypseLog = [];
+    s.bakery.apocalypseGraduated = false;
+    s.bakery.apocalypseInProgress = null;
+    s.bakery.apocalypseLoansTaken = 0;
+    s.bakery.apocalypseTech = null;
+    write(s);
+  },
+
   reset() {
     localStorage.removeItem(KEY);
+    localStorage.removeItem(V4_KEY);
+    localStorage.removeItem(V3_KEY);
     localStorage.removeItem(V2_KEY);
     localStorage.removeItem(V1_KEY);
   },

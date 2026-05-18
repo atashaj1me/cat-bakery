@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=JetBrains+Mono:wght@400;600&display=swap">
-  <link rel="stylesheet" href="assets/css/style.css?v=6">
+  <link rel="stylesheet" href="assets/css/style.css?v=7">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ctext y='52' font-size='52'%3E🥐%3C/text%3E%3C/svg%3E">
 </head>
 <body>
@@ -32,6 +32,12 @@
       <div class="lead">🔱 Hell Mode — Surviving Hell Market</div>
       <div class="sub" id="hell-sub">14 phased days of compound, exam-grade economics. Cournot, Stackelberg, Laffer peaks, quota rents, externality+monopoly, and a final-form rehearsal of both essay archetypes. Tighter tolerances, no hints, multi-stage decisions per day.</div>
       <span class="cta" id="hell-cta">▶ Locked until Vanilla Day 10</span>
+    </a>
+
+    <a class="campaign-tile apocalypse" href="chapters/daily.html?mode=apocalypse" id="apoc-tile">
+      <div class="lead">🔮 Beyond Hell: Apocalypse</div>
+      <div class="sub" id="apoc-sub">The complete final-exam guide. 16 phased days across 4 arcs — pre-midterm foundations (Cobb-Douglas, Slutsky, intertemporal), the welfare wars (stacked controls, retaliating tariffs), the market-failures trilogy (Coase, screening, regulation, public goods), then the Master's Examination (both essay archetypes, a 30-min MCQ blitz, and a synthesis capstone). Per-phase soft timer, strictest tolerances, multi-choice strategy phases, memory callbacks. Master this → 100/100.</div>
+      <span class="cta" id="apoc-cta">▶ Locked until Hell Day 14</span>
     </a>
 
     <div class="card story">
@@ -66,7 +72,7 @@
   </div>
 
   <script type="module">
-    import { State } from "./assets/js/state.js?v=6";
+    import { State } from "./assets/js/state.js?v=7";
 
     const CHAPTERS = [
       { id: 0, num: "Notebook 0", title: "Bakery Preparation", desc: "Consumer choice · production · profit max", file: "chapters/0-bakery-preparation.html" },
@@ -93,11 +99,15 @@
       { id: "hell-survivor",  label: "👹 Survived Hell Day 1" },
       { id: "duopoly-master", label: "♟️ Aced Cournot night" },
       { id: "hell-master",    label: "🔱 Hell Market certification" },
+      { id: "apoc-survivor",  label: "🌑 Survived the Doomsday Edict" },
+      { id: "apoc-master",    label: "🔮 Beyond Hell Master" },
+      { id: "perfect-100",    label: "💯 Royal Examiner — 100/100 predicted" },
     ];
 
     const state = State.get();
     const b = state.bakery;
     const hellUnlocked = !!b.graduated;
+    const apocUnlocked = !!b.hellGraduated;
 
     // Dashboard — shows both Vanilla and Hell stats when Hell is unlocked
     const dash = document.getElementById("dashboard");
@@ -108,6 +118,10 @@
       ${hellUnlocked ? `
         <div class="kpi"><span class="label">🔱 Hell Day</span><span class="value">${b.hellDay}/14</span></div>
         <div class="kpi"><span class="label">💀 Hell Cash</span><span class="value ${b.hellCash < 0 ? "bad" : b.hellCash > 400 ? "good" : ""}">${b.hellCash.toFixed(0)}</span></div>
+      ` : ""}
+      ${apocUnlocked ? `
+        <div class="kpi"><span class="label">🔮 Apoc Day</span><span class="value">${b.apocalypseDay}/16</span></div>
+        <div class="kpi"><span class="label">🌑 Apoc Cash</span><span class="value ${b.apocalypseCash < 0 ? "bad" : b.apocalypseCash > 600 ? "good" : ""}">${b.apocalypseCash.toFixed(0)}</span></div>
       ` : ""}
       <div class="kpi"><span class="label">🏆 Badges</span><span class="value">${b.achievements.length}/${ACHIEVEMENTS.length}</span></div>
     `;
@@ -148,6 +162,27 @@
       }
     }
 
+    // Apocalypse tile CTA + unlock state
+    const apocTile = document.getElementById("apoc-tile");
+    const apocCta  = document.getElementById("apoc-cta");
+    const apocSub  = document.getElementById("apoc-sub");
+    if (!apocUnlocked) {
+      apocTile.classList.add("locked");
+      apocTile.removeAttribute("href");
+      apocCta.textContent = "🔒 Graduate Hell Day 14 first";
+    } else if (b.apocalypseGraduated) {
+      apocCta.textContent = "🔮 Apocalypse Master — replay?";
+      apocSub.textContent = "You have crossed all four arcs of Apocalypse. The Royal Examination Bureau has signed your certificate. 100/100 is now possible.";
+    } else if (b.apocalypseDay === 1 && (b.apocalypseDaysCompleted||[]).length === 0) {
+      apocCta.textContent = "▶ Begin Apocalypse Day 1";
+    } else {
+      apocCta.textContent = `▶ Continue Apocalypse — Day ${b.apocalypseDay}`;
+      const lastApoc = (b.apocalypseLog || [])[0];
+      if (lastApoc) {
+        apocSub.innerHTML = `Last entry: <strong>Apocalypse Day ${lastApoc.day} — ${lastApoc.title}</strong>. Phase scores: ${(lastApoc.phaseScores || []).map(s => Math.round(s)).join(" · ")}`;
+      }
+    }
+
     // Reference Notebooks
     const mapEl = document.getElementById("map");
     CHAPTERS.forEach(ch => {
@@ -165,19 +200,21 @@
       mapEl.appendChild(a);
     });
 
-    // Recent activity — merged Vanilla + Hell
+    // Recent activity — merged Vanilla + Hell + Apocalypse
     const rec = document.getElementById("record");
     const lastMock = state.mockHistory[0];
     const merged = [
       ...(b.log || []).map(e => ({ ...e, mode: "vanilla" })),
       ...(b.hellLog || []).map(e => ({ ...e, mode: "hell" })),
-    ].sort((x, y) => (y.when || "").localeCompare(x.when || "")).slice(0, 4);
+      ...(b.apocalypseLog || []).map(e => ({ ...e, mode: "apocalypse" })),
+    ].sort((x, y) => (y.when || "").localeCompare(x.when || "")).slice(0, 5);
+    const modeLabel = m => m === "apocalypse" ? "🔮 Apocalypse" : m === "hell" ? "🔱 Hell" : "🏪 Vanilla";
     if (merged.length === 0 && !lastMock) {
       rec.innerHTML = `<p><em>No campaign days or exam attempts yet. Pick up your father's letter above.</em></p>`;
     } else {
       const recentLog = merged.map(e => `
         <div class="logbook-entry ${e.cashDelta >= 0 ? "win" : "fail"}">
-          <div class="day">${e.mode === "hell" ? "🔱 Hell" : "🏪 Vanilla"} Day ${e.day} — ${e.title}</div>
+          <div class="day">${modeLabel(e.mode)} Day ${e.day} — ${e.title}</div>
           <div class="summary">${(e.summary || "").replace(/<[^>]+>/g, '')}</div>
         </div>
       `).join("");

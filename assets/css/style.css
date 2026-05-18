@@ -803,6 +803,129 @@ ul.trap-list li { margin-bottom: 8px; color: var(--ink-soft); }
   50%      { box-shadow: 0 0 22px #e08c6e, 0 0 36px #b9542f; }
 }
 
+/* ---------- Apocalypse variant ---------- */
+.campaign-tile.apocalypse {
+  background:
+    radial-gradient(circle at 30% 20%, rgba(200, 130, 255, 0.35), transparent 60%),
+    linear-gradient(135deg, #2a1450, #0a0420 80%);
+  border-color: #6a3aa0;
+  color: #ffe6c0;
+  box-shadow: var(--shadow), 0 0 32px rgba(180, 80, 220, 0.30), 0 0 60px rgba(220, 60, 90, 0.18);
+}
+.campaign-tile.apocalypse:hover {
+  box-shadow: 0 8px 24px rgba(0,0,0,0.65), 0 0 36px rgba(200, 100, 255, 0.45), 0 0 80px rgba(220, 60, 90, 0.30);
+}
+.campaign-tile.apocalypse .lead { color: #f0c0ff; text-shadow: 0 0 14px rgba(200, 100, 255, 0.55); }
+.campaign-tile.apocalypse .sub { color: #d8b8e8; }
+.campaign-tile.apocalypse .cta { background: rgba(20, 8, 30, 0.85); color: #ffb077; }
+.campaign-tile.apocalypse.locked {
+  filter: grayscale(0.6) brightness(0.5);
+  cursor: not-allowed;
+  pointer-events: none;
+}
+.campaign-tile.apocalypse.locked::after {
+  content: "🔒 unlocked after Hell Day 14";
+  position: absolute;
+  top: 12px; right: 14px;
+  font-size: 0.78em;
+  background: rgba(0,0,0,0.5);
+  padding: 4px 10px;
+  border-radius: 12px;
+  color: #f0c0ff;
+}
+
+/* Apocalypse progress track tint */
+.progress-track.apocalypse .pip.done { background: linear-gradient(90deg, #c860ff, #6a1090); }
+.progress-track.apocalypse .pip.current {
+  background: #c860ff;
+  box-shadow: 0 0 14px #c860ff;
+  animation: pulseGlowApoc 1.6s infinite;
+}
+@keyframes pulseGlowApoc {
+  0%, 100% { box-shadow: 0 0 8px #c860ff; }
+  50%      { box-shadow: 0 0 22px #c860ff, 0 0 36px #b9542f; }
+}
+
+/* Arc-opener scroll */
+.arc-scroll {
+  background:
+    radial-gradient(ellipse at top left, rgba(200, 130, 255, 0.18), transparent 60%),
+    linear-gradient(180deg, var(--paper-2), var(--paper));
+  border: 2px solid var(--accent-dark);
+  border-left: 6px solid #c860ff;
+  border-radius: var(--radius);
+  padding: 24px 26px;
+  margin: 18px 0;
+  box-shadow: var(--shadow), 0 0 28px rgba(200, 100, 255, 0.18);
+  position: relative;
+}
+.arc-scroll .arc-cinematic {
+  font-size: 3.4em;
+  text-align: center;
+  margin-bottom: 8px;
+  filter: drop-shadow(0 0 16px rgba(200, 130, 255, 0.55));
+}
+.arc-scroll p { color: var(--ink); line-height: 1.65; }
+.arc-scroll strong { color: #f0c0ff; }
+
+/* Memory callback */
+.memory-callback {
+  background: rgba(212, 165, 116, 0.06);
+  border: 1px dashed var(--accent-dark);
+  border-left: 4px solid var(--warn);
+  border-radius: var(--radius);
+  padding: 12px 16px;
+  margin: 12px 0;
+  font-size: 0.95em;
+  color: var(--ink-soft);
+  font-style: italic;
+}
+.memory-callback strong { color: var(--accent); font-style: normal; }
+
+/* Phase soft timer */
+.phase-timer {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 1.05em;
+  padding: 6px 12px;
+  border-radius: 18px;
+  background: var(--paper-2);
+  border: 1px solid var(--border);
+  color: var(--accent);
+  margin-bottom: 10px;
+}
+.phase-timer.warn { background: rgba(227, 183, 88, 0.15); color: var(--warn); }
+.phase-timer.crit { background: rgba(224, 140, 110, 0.18); color: var(--bad); animation: pulse 1s infinite; }
+
+/* Multi-choice options */
+.choice-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 10px 0 16px;
+}
+.choice-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.12s ease, border-color 0.12s ease;
+}
+.choice-option:hover { background: var(--paper-2); border-color: var(--accent-dark); }
+.choice-option input[type="radio"] {
+  margin-top: 4px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+.choice-option:has(input:checked) {
+  background: rgba(212, 165, 116, 0.10);
+  border-color: var(--accent);
+}
+
 /* Phase chips for hell-day progress */
 .phase-chip-row {
   display: flex;
