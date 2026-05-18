@@ -123,10 +123,10 @@ export const CHAPTER_MCQS = {
       explanation: "In LR, $P = \\min AC$, and the firm produces at the quantity where $AC$ is minimized. $MC = AC$ at that point.",
     },
     {
-      prompt: "Demand $q = A p^{-\\varepsilon}$ with $A = 80, \\varepsilon = 1.5$. Supply $q = B p^{\\eta}$ with $B = 0.6, \\eta = 1.2$. The equilibrium price is closest to:",
-      options: ["$p^* = 4$", "$p^* = 16$", "$p^* = 25$", "$p^* = 80$"],
+      prompt: "Demand $q = A p^{-\\varepsilon}$ with $A = 100, \\varepsilon = 1$. Supply $q = B p^{\\eta}$ with $B = 1, \\eta = 1$. The equilibrium price is:",
+      options: ["$p^* = 4$", "$p^* = 10$", "$p^* = 25$", "$p^* = 100$"],
       answer: 1,
-      explanation: "$p^* = (A/B)^{1/(\\varepsilon + \\eta)} = (80/0.6)^{1/2.7} \\approx (133.3)^{0.37} \\approx 6$. Wait — let me recompute: $\\ln(133.3) \\approx 4.89$, $\\times 0.37 \\approx 1.81$, $e^{1.81} \\approx 6.1$. So the closest among the answers is 4 — but actually our simulator's equilibrium is computed exactly; this MCQ rounds the textbook to $\\sim 6$. Use the formula to confirm.",
+      explanation: "Set $A p^{-\\varepsilon} = B p^{\\eta} \\Rightarrow p^{\\varepsilon + \\eta} = A/B \\Rightarrow p^* = (A/B)^{1/(\\varepsilon+\\eta)} = 100^{1/2} = 10$. Equilibrium quantity: $q^* = 100/10 = 10$.",
     },
     {
       prompt: "Which of the following is NOT required for the First Welfare Theorem?",
@@ -615,16 +615,16 @@ export const FINAL_MOCK = [
     tag: "Ch3",
   },
   {
-    prompt: "Demand slope $|dq/dp| = 2$ ($q = a - 2p$), supply slope $|dq/dp| = 1$ ($q = c + p$). A $\\$4$ tax causes the consumer price to:",
+    prompt: "Demand $q = a - p$ ($|dq/dp| = 1$, relatively inelastic). Supply $q = c + 2p$ ($|dq/dp| = 2$, more elastic). A $\\$4$ per-unit tax. By how much does the consumer price rise?",
     options: [
-      "Rise by about $\\$2.67$ (consumer up $> \\$2$)",
-      "Rise by $\\$2$",
-      "Rise by $\\$4$",
-      "Stay the same",
-      "Rise by $\\$1.33$",
+      "About $\\$2.67$ (consumer up $> \\$2$)",
+      "$\\$2$",
+      "$\\$4$",
+      "Stays the same",
+      "About $\\$1.33$",
     ],
     answer: 0,
-    explanation: "Consumer share of burden $= \\frac{b}{b+d} \\cdot t$ where $b$ is demand slope and $d$ is supply slope. Here $b = 2,\\ d = 1$, so $\\Delta p_c = \\frac{2}{3} \\cdot 4 \\approx \\$2.67$. Less elastic side bears more.",
+    explanation: "Consumer-price change $= \\frac{d}{b+d} \\cdot t$ where $b$ is the demand slope and $d$ the supply slope (both in $|dq/dp|$). Here $b = 1,\\ d = 2$: $\\Delta p_c = \\frac{2}{1+2} \\cdot 4 = \\frac{8}{3} \\approx \\$2.67$. The less elastic side (demand) bears more of the tax.",
     tag: "Ch19",
   },
   {
