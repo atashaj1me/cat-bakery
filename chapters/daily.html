@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=JetBrains+Mono:wght@400;600&display=swap">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV" crossorigin="anonymous">
-  <link rel="stylesheet" href="../assets/css/style.css?v=4">
+  <link rel="stylesheet" href="../assets/css/style.css?v=5">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ctext y='52' font-size='52'%3E🥐%3C/text%3E%3C/svg%3E">
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" integrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8" crossorigin="anonymous"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" integrity="sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05" crossorigin="anonymous"></script>
@@ -33,10 +33,11 @@
   </div>
 
   <script type="module">
-    import { State } from "../assets/js/state.js?v=4";
-    import { DAYS, getDay, flavorLine } from "../assets/js/data/days.js?v=4";
-    import { HELL_DAYS, getHellDay } from "../assets/js/data/days-hell.js?v=4";
-    import { CATS, purchase } from "../assets/js/data/cats.js?v=4";
+    import { State } from "../assets/js/state.js?v=5";
+    import { DAYS, getDay, flavorLine } from "../assets/js/data/days.js?v=5";
+    import { HELL_DAYS, getHellDay } from "../assets/js/data/days-hell.js?v=5";
+    import { CATS, purchase } from "../assets/js/data/cats.js?v=5";
+    import { TECHS, TECH_LIST, getTech, rollTech } from "../assets/js/data/technologies.js?v=5";
 
     // --- mode detection from URL ---
     const urlParams = new URLSearchParams(window.location.search);
@@ -138,11 +139,13 @@
 
     function renderDashboard(b) {
       const earnedAch = ACHIEVEMENTS.filter(a => b.achievements.includes(a.id)).length;
+      const tech = currentTech(b);
       document.getElementById("dashboard").innerHTML = `
         <div class="kpi"><span class="label">Mode</span><span class="value">${MODE === "hell" ? "🔱 Hell" : "🏪 Vanilla"}</span></div>
         <div class="kpi"><span class="label">Day</span><span class="value">${currentDay(b)}/${TOTAL_DAYS}</span></div>
         <div class="kpi"><span class="label">💰 Cash</span><span class="value ${currentCash(b) < 0 ? "bad" : currentCash(b) > 300 ? "good" : ""}">${currentCash(b).toFixed(0)}</span></div>
         <div class="kpi"><span class="label">⭐ Rep</span><span class="value">${currentRep(b).toFixed(1)}/5</span></div>
+        ${tech ? `<div class="kpi"><span class="label">${tech.emoji} Tech</span><span class="value" style="font-size:0.95em;">${tech.name}</span></div>` : ""}
         <div class="kpi"><span class="label">🏆 Badges</span><span class="value">${earnedAch}/${ACHIEVEMENTS.length}</span></div>
       `;
     }
@@ -203,7 +206,7 @@
       const day = getDay(b.day);
       if (!day) { host.innerHTML = `<div class="card">No data for Day ${b.day}.</div>`; return; }
 
-      const letter = day.letter();
+      const letter = day.letter(b.tech);
 
       host.innerHTML = `
         <h2 style="margin-top:18px;">Day ${day.day} — ${day.title}</h2>
@@ -367,7 +370,7 @@
       const host = document.getElementById("day-host");
       const phaseIdx = progress.phaseIdx;
       const phase = day.phases[phaseIdx];
-      const letter = day.letter();
+      const letter = day.letter(b.hellTech);
       const totalPhases = day.phases.length;
       const completedScores = progress.phaseResults.map(r => r.score);
 
@@ -545,6 +548,95 @@
       `).join("");
     }
 
+    function currentTech(b) {
+      const id = MODE === "hell" ? b.hellTech : b.tech;
+      return id ? getTech(id) : null;
+    }
+
+    function renderSlotMachine() {
+      const host = document.getElementById("day-host");
+      const introCopy = MODE === "hell"
+        ? "Hell Market does not care which father you had — it cares only which technology you inherit. Spin to discover yours. The result is locked until you graduate or reset Hell."
+        : "Family rumour: you may not be Old Tomcat's true heir. Four fathers, four bakeries, four production technologies. Spin the family tree. Whichever cat you actually inherit from is who you are for the next 10 days.";
+
+      host.innerHTML = `
+        <div class="card story" style="text-align:center;">
+          <h2 style="margin-top:0;">🎰 Roll the Family Tree</h2>
+          <p style="color:var(--ink-soft);">${introCopy}</p>
+          <div class="slot-row" id="slot-row">
+            <div class="slot-cell" id="slot-1">❓</div>
+            <div class="slot-cell" id="slot-2">❓</div>
+            <div class="slot-cell" id="slot-3">❓</div>
+          </div>
+          <div class="slot-caption" id="slot-caption">Press the lever to roll a father.</div>
+          <button id="spin-btn" class="bigbtn" style="max-width:300px; margin:18px auto 0;">🎰 Spin the family tree</button>
+        </div>
+        <div class="card" id="tech-preview" style="display:none"></div>
+      `;
+
+      document.getElementById("spin-btn").addEventListener("click", spinSlot);
+    }
+
+    let spinning = false;
+    function spinSlot() {
+      if (spinning) return;
+      spinning = true;
+      const btn = document.getElementById("spin-btn");
+      btn.disabled = true;
+      btn.textContent = "🎰 Spinning…";
+
+      const cells = [document.getElementById("slot-1"), document.getElementById("slot-2"), document.getElementById("slot-3")];
+      const finalTech = rollTech();
+      const final = getTech(finalTech);
+      const otherEmojis = TECH_LIST.filter(t => t.id !== finalTech).map(t => t.emoji);
+
+      let ticks = 0;
+      const ticker = setInterval(() => {
+        cells.forEach(c => {
+          const opts = [...otherEmojis, final.emoji, "🎲", "🌪️", "🍞"];
+          c.textContent = opts[Math.floor(Math.random() * opts.length)];
+          c.classList.add("spinning");
+        });
+        ticks += 1;
+        // Lock cells one by one
+        if (ticks >= 8)  cells[0].textContent = final.emoji, cells[0].classList.remove("spinning"), cells[0].classList.add("locked");
+        if (ticks >= 12) cells[1].textContent = final.emoji, cells[1].classList.remove("spinning"), cells[1].classList.add("locked");
+        if (ticks >= 16) {
+          cells[2].textContent = final.emoji; cells[2].classList.remove("spinning"); cells[2].classList.add("locked");
+          clearInterval(ticker);
+          finishSpin(final);
+        }
+      }, 120);
+    }
+
+    function finishSpin(tech) {
+      document.getElementById("slot-caption").innerHTML =
+        `🎉 You inherited <strong>${tech.name}</strong>'s bakery!`;
+      const preview = document.getElementById("tech-preview");
+      preview.style.display = "block";
+      preview.innerHTML = `
+        <h3>${tech.emoji} ${tech.name}'s technology</h3>
+        <p style="color:var(--ink-soft); font-style:italic;">${tech.fatherStory}</p>
+        <p>Your short-run production function:</p>
+        <p style="text-align:center;">$$${tech.formula}$$</p>
+        <p style="font-size:0.9em; color:var(--muted);">${tech.paramHint}.</p>
+        <p>First-order condition for profit-max under output price $p$ and wage $w$:</p>
+        <p style="text-align:center;">$$${tech.foc}$$</p>
+        <p style="text-align:center; margin-top:18px;">
+          <button id="lock-tech" class="bigbtn" style="max-width:340px; margin:0 auto;">✅ Lock it in — start Day 1</button>
+        </p>
+      `;
+      typesetMath(preview);
+      preview.scrollIntoView({ behavior: "smooth", block: "start" });
+      document.getElementById("lock-tech").addEventListener("click", () => {
+        State.setTech(MODE, tech.id);
+        spinning = false;
+        toast(`${tech.emoji} ${tech.name} is now your father.`, "win", "Technology locked");
+        window.scrollTo({ top: 0, behavior: "smooth" });
+        render();
+      });
+    }
+
     function render() {
       try {
         const b = State.bakery();
@@ -560,6 +652,13 @@
           return;
         }
         renderHeader(b); renderProgress(b); renderScene(b); renderDashboard(b);
+        // Slot machine if no technology rolled for this campaign yet
+        const techId = MODE === "hell" ? b.hellTech : b.tech;
+        if (!techId && !isGraduated(b)) {
+          renderSlotMachine();
+          renderLogbook(b); renderAchievements(b);
+          return;
+        }
         if (MODE === "hell") renderDayHell(b);
         else renderDayVanilla(b);
         renderLogbook(b); renderAchievements(b);

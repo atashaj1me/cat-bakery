@@ -5,7 +5,8 @@
 //   2) Vanilla campaign — added in v2 (bakery.*).
 //   3) Hell Market campaign — added in v3 (bakery.hell*).
 
-const KEY = "catBakery.v3";
+const KEY = "catBakery.v4";
+const V3_KEY = "catBakery.v3";
 const V2_KEY = "catBakery.v2";
 const V1_KEY = "catBakery.v1";
 
@@ -19,6 +20,7 @@ const DEFAULT_BAKERY = {
   achievements: [],
   loansTaken: 0,
   graduated: false,
+  tech: null,            // technology id from data/technologies.js — null until slot machine roll
   // ---- Mode flag ----
   mode: "vanilla",
   // ---- Hell ----
@@ -30,6 +32,7 @@ const DEFAULT_BAKERY = {
   hellGraduated: false,
   hellInProgress: null,    // {day, phaseIdx, phaseResults: [{score, summary}]}
   hellLoansTaken: 0,
+  hellTech: null,          // separate tech roll for Hell campaign
 };
 
 const DEFAULT_STATE = {
@@ -45,7 +48,15 @@ function read() {
   try {
     let raw = localStorage.getItem(KEY);
     if (!raw) {
-      // Migrate v2 → v3 first (preserves chapter scores + vanilla state)
+      // Cascading migration: v3 → v4 → v2 → v1 fallbacks
+      const v3raw = localStorage.getItem(V3_KEY);
+      if (v3raw) {
+        const v3 = JSON.parse(v3raw);
+        const migrated = { ...structuredClone(DEFAULT_STATE), ...v3,
+          bakery: { ...structuredClone(DEFAULT_BAKERY), ...(v3.bakery || {}) } };
+        localStorage.setItem(KEY, JSON.stringify(migrated));
+        return migrated;
+      }
       const v2raw = localStorage.getItem(V2_KEY);
       if (v2raw) {
         const v2 = JSON.parse(v2raw);
@@ -54,7 +65,6 @@ function read() {
         localStorage.setItem(KEY, JSON.stringify(migrated));
         return migrated;
       }
-      // Else try v1 → v3 (preserves chapter scores only)
       const v1raw = localStorage.getItem(V1_KEY);
       if (v1raw) {
         const v1 = JSON.parse(v1raw);
@@ -147,6 +157,14 @@ export const State = {
     write(s);
   },
 
+  // Persist chosen technology for current mode.
+  setTech(mode, techId) {
+    const s = read();
+    if (mode === "hell") s.bakery.hellTech = techId;
+    else s.bakery.tech = techId;
+    write(s);
+  },
+
   // ----- bakery: Vanilla -----
   applyDayResult({ day, title, yourAnswer, correctAnswer, cashDelta, repDelta, summary }) {
     const s = read();
@@ -183,7 +201,18 @@ export const State = {
 
   resetBakery() {
     const s = read();
-    s.bakery = { ...structuredClone(DEFAULT_BAKERY), mode: s.bakery.mode };
+    // Reset Vanilla only — keep Hell state and mode flag.
+    const base = structuredClone(DEFAULT_BAKERY);
+    s.bakery = {
+      ...base,
+      mode: s.bakery.mode,
+      hellCash: s.bakery.hellCash, hellReputation: s.bakery.hellReputation,
+      hellDay: s.bakery.hellDay, hellDaysCompleted: s.bakery.hellDaysCompleted,
+      hellLog: s.bakery.hellLog, hellGraduated: s.bakery.hellGraduated,
+      hellInProgress: s.bakery.hellInProgress, hellLoansTaken: s.bakery.hellLoansTaken,
+      hellTech: s.bakery.hellTech,
+      achievements: s.bakery.achievements,
+    };
     write(s);
   },
 
@@ -235,6 +264,7 @@ export const State = {
     s.bakery.hellGraduated = false;
     s.bakery.hellInProgress = null;
     s.bakery.hellLoansTaken = 0;
+    s.bakery.hellTech = null;   // re-roll the slot machine on next entry
     write(s);
   },
 

@@ -10,6 +10,7 @@ import {
   priceCeiling, subsidyToClear, perUnitTax, tariffSurplus,
   externalityDriving, monopolyLinear, monopolyWithTax,
 } from "../econ.js";
+import { getTech } from "./technologies.js";
 
 // ---- helpers ---------------------------------------------------------------
 function scoreNumeric(your, target, tol) {
@@ -52,40 +53,48 @@ function flavorLine(satisfied) {
 //   grade(letter, answers) → { targets, score, cashDelta, repDelta, summary }
 
 export const DAYS = [
-  // ============================================================ DAY 1
+  // ============================================================ DAY 1 (tech-aware)
   {
     day: 1,
     title: "Your father's last letter",
     chapterRef: { id: 0, label: "Ch 0 — Bakery Preparation" },
     weather: { emoji: "🌅", line: "Dawn on opening day. Frost on the croissant trays." },
-    letter: () => {
-      const a = 4, w = 2, p = 5;
+    letter: (techId = "tomcat") => {
+      const tech = getTech(techId);
+      const params = { ...tech.defaultParams, w: 2, p: 5 };
+      const pretty = Object.entries(tech.defaultParams).map(([k, v]) => `$${k} = ${v}$`).join(", ");
       return {
-        from: "🐈‍⬛ Old Baker Tomcat — Last Will & Testament",
+        from: `${tech.emoji} ${tech.name} — Last Will & Testament`,
         body: `
           <p>My dear cub,</p>
-          <p>The bakery is yours. Each baker you hire pulls $a \\cdot \\sqrt{L}$ loaves out of the oven per day, where $a = ${a}$. Their wage is $w = ${w}$ coins each. The market will pay $p = ${p}$ coins per loaf — and you cannot haggle, the price is set by the Whiskerton Guild.</p>
-          <p>How many bakers $L$ should you hire tomorrow to maximize my bakery's profit?</p>
-          <p style="margin-top:14px;">$$\\pi(L) = p \\cdot a \\sqrt{L} - w \\cdot L$$</p>
+          <p>The bakery is yours. ${tech.fatherStory}</p>
+          <p>Each baker contributes according to <strong>your inherited technology</strong>:</p>
+          <p style="text-align:center;">$$${tech.formula}$$</p>
+          <p>Parameters: ${pretty}, wage $w = ${params.w}$, output price $p = ${params.p}$ (Guild-set, no haggling).</p>
+          <p>Choose $L^*$ to maximise $\\pi(L) = p \\cdot y(L) - w \\cdot L$.</p>
         `,
-        params: { a, w, p },
+        params, techId,
       };
     },
     fields: [
-      { id: "L", label: "Bakers to hire, L =", tol: 1, hint: "Watch profit react at L = 4, 16, 25, 36." },
+      { id: "L", label: "Bakers to hire, $L^*$ =", tol: 1.5, hint: "Different inherited tech → different FOC → different optimum." },
     ],
     grade(letter, answers) {
-      const { a, w, p } = letter.params;
-      const opt = profitOneInput({ a, w, p });
+      const tech = getTech(letter.techId);
+      const { w, p } = letter.params;
+      const techParams = Object.fromEntries(Object.entries(letter.params).filter(([k]) => k !== "w" && k !== "p"));
+      const optL = tech.optimumL(techParams, p, w);
+      const optProfit = tech.optimumProfit(techParams, p, w);
       const yourL = answers.L;
-      const yourProfit = p * a * Math.sqrt(Math.max(0, yourL)) - w * yourL;
-      const score = scoreNumeric(yourL, opt.L, 1);
+      const yourProfit = tech.profit(yourL, techParams, p, w);
+      const tol = Math.max(1.5, optL * 0.08);
+      const score = scoreNumeric(yourL, optL, tol);
       return {
-        targets: { L: opt.L },
+        targets: { L: optL },
         score,
         cashDelta: Math.round(yourProfit),
         repDelta: score >= 90 ? 0.3 : score >= 60 ? 0.1 : -0.1,
-        summary: `You hired <strong>${yourL.toFixed(0)}</strong> bakers. Father's optimum: $L^* = (a p / 2w)^2 = ${opt.L.toFixed(0)}$ (profit ${opt.profit.toFixed(1)} coins). Your profit today: <strong>${yourProfit.toFixed(1)} coins</strong>.`,
+        summary: `You hired <strong>${yourL.toFixed(1)}</strong> bakers. Optimum for ${tech.name}'s tech: $L^* = ${optL.toFixed(1)}$ (profit ${optProfit.toFixed(1)} coins). Your profit: <strong>${yourProfit.toFixed(1)}</strong>. The FOC was $${tech.foc}$.`,
       };
     },
   },

@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=JetBrains+Mono:wght@400;600&display=swap">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV" crossorigin="anonymous">
-  <link rel="stylesheet" href="../assets/css/style.css?v=3">
+  <link rel="stylesheet" href="../assets/css/style.css?v=5">
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" integrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8" crossorigin="anonymous"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" integrity="sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05" crossorigin="anonymous"></script>
 </head>
@@ -18,20 +18,25 @@
 
     <div id="story"></div>
 
-    <h2>Sim — Hire bakers, set output</h2>
+    <h2>Sim — Choose a technology, then hire bakers</h2>
     <div class="card">
-      <p>Single-input production: <span class="formula">y = a·√L</span>. You hire L cat bakers at wage w. Loaves sell at competitive price p.</p>
+      <p>Single-input production depends on which family bakery you train under. Pick a father's technology and the simulator updates the FOC accordingly.</p>
       <div class="controls">
         <label class="field">
-          <span class="name">Number of bakers, L</span>
-          <input id="L" type="range" min="0" max="200" step="1" value="40">
-          <span class="formula" id="L-val">40</span>
+          <span class="name">🐈 Inherited technology</span>
+          <select id="tech-pick" class="cell" style="width:100%; padding:8px 10px;"></select>
         </label>
         <label class="field">
           <span class="name">Parameters</span>
-          <span class="formula" id="params">a = ?, w = ?, p = ?</span>
+          <span class="formula" id="params"></span>
+        </label>
+        <label class="field full">
+          <span class="name">Number of bakers, L</span>
+          <input id="L" type="range" min="0" max="200" step="1" value="40">
+          <span class="formula" id="L-val">L = 40</span>
         </label>
       </div>
+      <div id="tech-foc" class="card" style="background:rgba(212,165,116,0.06); border-style:dashed; padding:12px 16px; margin-top:14px;"></div>
       <div id="readout" style="margin-top:12px"></div>
       <p style="text-align:center; margin-top:12px;">
         <button id="check">Lock in production →</button>
@@ -39,50 +44,58 @@
       <p id="sim-result"></p>
     </div>
 
-    <h2>Three exam-style MCQs</h2>
+    <h2>Exam-style MCQs</h2>
     <div id="mcqs"></div>
 
     <div id="mastery"></div>
   </div>
 
   <script type="module">
-    import { header, cat, readout, setReadout, mastery, pctOfOptimum } from "../assets/js/chapter.js?v=3";
-    import { profitOneInput } from "../assets/js/econ.js?v=3";
-    import { renderMCQSet } from "../assets/js/mcq.js?v=3";
-    import { CHAPTER_MCQS } from "../assets/js/data/mcqs.js?v=3";
+    import { header, cat, readout, setReadout, mastery, pctOfOptimum, typesetMath } from "../assets/js/chapter.js?v=5";
+    import { TECHS, TECH_LIST, getTech } from "../assets/js/data/technologies.js?v=5";
+    import { renderMCQSet } from "../assets/js/mcq.js?v=5";
+    import { CHAPTER_MCQS } from "../assets/js/data/mcqs.js?v=5";
 
     header({ num: 0, title: "🥖 Bakery Preparation" });
 
     document.getElementById("story").innerHTML = cat({
       name: "Apprentice Biscuit",
       emoji: "🐈",
-      line: "Warming up. Before policy shocks rain on us, let's bake. Pick the labor that maximizes profit — the same √-production setup you'll see on Q6 of the final.",
+      line: "Choose any father's tech and watch how the optimum changes. On the exam you might see any of these — always start from $p \\cdot MP_L = w$ for the specific functional form.",
     });
 
-    // Randomize parameters per visit (visible).
-    const a = [2, 3, 4, 5][Math.floor(Math.random() * 4)];
-    const w = [1, 2, 3][Math.floor(Math.random() * 3)];
-    const p = [3, 4, 5, 6][Math.floor(Math.random() * 4)];
-    document.getElementById("params").textContent = `a = ${a}, w = ${w}, p = ${p}`;
+    // Build tech dropdown
+    const techPick = document.getElementById("tech-pick");
+    const techLabels = { tomcat: "√L", cubist: "cube-root", quigley: "quadratic", loggia: "logarithmic" };
+    TECH_LIST.forEach(t => {
+      const opt = document.createElement("option");
+      opt.value = t.id;
+      opt.textContent = `${t.emoji} ${t.name} — ${techLabels[t.id] || t.id}`;
+      techPick.appendChild(opt);
+    });
 
-    const opt = profitOneInput({ a, w, p });
+    const w = 2, p = 5;
 
     const ro = document.getElementById("readout");
     ro.innerHTML = readout([
-      { id: "y", label: "Output y", value: "—" },
+      { id: "y", label: "Output y(L)", value: "—" },
       { id: "rev", label: "Revenue p·y", value: "—" },
       { id: "cost", label: "Cost w·L", value: "—" },
       { id: "profit", label: "Profit π", value: "—" },
     ]);
 
     const slider = document.getElementById("L");
-    slider.max = Math.ceil(opt.L * 3); // give room to overshoot
     const lab = document.getElementById("L-val");
 
+    function getCurrentTech() { return getTech(techPick.value); }
+    function getParams() { return getCurrentTech().defaultParams; }
+
     function update() {
+      const tech = getCurrentTech();
+      const params = getParams();
       const L = +slider.value;
       lab.textContent = `L = ${L}`;
-      const y = a * Math.sqrt(L);
+      const y = tech.y(L, params);
       const rev = p * y;
       const cost = w * L;
       const profit = rev - cost;
@@ -90,9 +103,29 @@
       setReadout("rev", rev.toFixed(2));
       setReadout("cost", cost.toFixed(2));
       setReadout("profit", profit.toFixed(2), profit >= 0 ? "good" : "bad");
+      const paramStr = Object.entries(params).map(([k, v]) => `$${k} = ${v}$`).join(", ");
+      document.getElementById("params").innerHTML = `${paramStr}, $w = ${w}$, $p = ${p}$`;
+      typesetMath(document.getElementById("params"));
     }
+
+    function updateTech() {
+      const tech = getCurrentTech();
+      const params = getParams();
+      const optL = tech.optimumL(params, p, w);
+      slider.max = Math.max(50, Math.ceil(optL * 3));
+      slider.value = Math.max(1, Math.round(optL * 0.6));
+      document.getElementById("tech-foc").innerHTML = `
+        <strong>${tech.emoji} ${tech.name}'s technology.</strong> ${tech.fatherStory}
+        <br><br>Production:  $${tech.formula}$  &nbsp;·&nbsp;  FOC: $${tech.foc}$
+        <br>Optimal labor at $p = ${p},\\ w = ${w}$: $L^* = ${optL.toFixed(2)}$
+      `;
+      typesetMath(document.getElementById("tech-foc"));
+      update();
+    }
+
+    techPick.addEventListener("change", updateTech);
     slider.addEventListener("input", update);
-    update();
+    updateTech();
 
     let simPct = 0, mcqPct = 0, simDone = false, mcqDone = false;
     const tryFinish = () => {
@@ -101,27 +134,35 @@
           chapterId: 0, simPct, mcqPct,
           formulas: [
             `Cobb-Douglas demand: $x^* = \\frac{\\alpha}{\\alpha+\\beta} \\cdot \\frac{I}{p_x}$`,
-            `Single-input profit max FOC: $p \\cdot MP_L = w$; if $y = a\\sqrt{L}$ then $L^* = \\left(\\frac{a p}{2 w}\\right)^2$`,
-            `Two-input separable: $x_i^* = \\left(\\frac{a_i p}{2 w_i}\\right)^2$`,
-            `Linear demand $q = a - b p$ has CONSTANT slope but VARYING elasticity.`,
+            `Single-input profit max: differentiate $\\pi(L) = p \\cdot y(L) - w L$, set to zero.`,
+            `Tomcat (√): $L^* = \\left(\\frac{ap}{2w}\\right)^2$`,
+            `Cubist ($L^{1/3}$): $L^* = \\left(\\frac{ap}{3w}\\right)^{3/2}$`,
+            `Quigley ($aL - bL^2$): $L^* = \\frac{ap - w}{2bp}$`,
+            `Loggia ($a\\ln(1+L)$): $L^* = \\frac{ap}{w} - 1$`,
+            `Linear demand $q = a - bp$: CONSTANT slope, VARYING elasticity.`,
           ],
           traps: [
-            `"Linear demand has constant elasticity" — wrong. It has constant slope. Elasticity varies from $0$ (at $p = 0$) to $\\infty$ (at choke price).`,
+            `"Linear demand has constant elasticity" — wrong. Slope is constant; elasticity varies from $0$ at $p=0$ to $-\\infty$ at the choke price.`,
+            `"All concave production has the same FOC" — wrong. Always start from $p \\cdot MP_L = w$ for the SPECIFIC functional form.`,
           ],
         });
       }
     };
 
     document.getElementById("check").addEventListener("click", () => {
+      const tech = getCurrentTech();
+      const params = getParams();
       const L = +slider.value;
-      const y = a * Math.sqrt(L);
-      const profit = p * y - w * L;
-      simPct = pctOfOptimum(profit, opt.profit, 0.05);
+      const profit = tech.profit(L, params, p, w);
+      const optProfit = tech.optimumProfit(params, p, w);
+      simPct = pctOfOptimum(profit, optProfit, 0.05);
+      const optL = tech.optimumL(params, p, w);
       document.getElementById("sim-result").innerHTML = `
         Your profit: <strong>${profit.toFixed(2)}</strong>.
-        Optimum profit: <strong>${opt.profit.toFixed(2)}</strong> at L* = ${opt.L.toFixed(1)}.
+        Optimum profit: <strong>${optProfit.toFixed(2)}</strong> at $L^* = ${optL.toFixed(2)}$.
         Score: <span class="flash ${simPct >= 80 ? "good" : simPct >= 50 ? "warn" : "bad"}">${simPct}%</span>
       `;
+      typesetMath(document.getElementById("sim-result"));
       simDone = true;
       tryFinish();
     });

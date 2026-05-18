@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=JetBrains+Mono:wght@400;600&display=swap">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV" crossorigin="anonymous">
-  <link rel="stylesheet" href="../assets/css/style.css?v=3">
+  <link rel="stylesheet" href="../assets/css/style.css?v=5">
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" integrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8" crossorigin="anonymous"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" integrity="sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05" crossorigin="anonymous"></script>
 </head>
@@ -20,12 +20,23 @@
 
     <h2>Sim — Find the market-clearing price</h2>
     <div class="card">
-      <p>It's market day in Whiskerton Square. Demand: <span class="formula" id="d-eq">q = a − b·p</span>. Supply: <span class="formula" id="s-eq">q = c + d·p</span>. Move the price slider — your job is to <strong>clear the market</strong> (q_d = q_s).</p>
+      <p>It's market day in Whiskerton Square. Use the toggle to switch between linear and exam-grade constant-elasticity curves.</p>
 
       <div class="controls">
+        <label class="field">
+          <span class="name">Curve shape</span>
+          <select id="shape" class="cell" style="width:100%; padding:8px 10px;">
+            <option value="linear">Linear ($q = a − b p$, $q = c + d p$)</option>
+            <option value="ce">Constant elasticity ($q = A p^{-\varepsilon}$, $q = B p^{\eta}$)</option>
+          </select>
+        </label>
+        <label class="field">
+          <span class="name">Parameters</span>
+          <span class="formula" id="params"></span>
+        </label>
         <label class="field full">
           <span class="name">Price (cents per loaf)</span>
-          <input id="p" type="range" min="0" max="40" step="0.5" value="10">
+          <input id="p" type="range" min="0.5" max="40" step="0.1" value="10">
           <span class="formula" id="p-val">p = 10</span>
         </label>
       </div>
@@ -37,89 +48,176 @@
       <p id="sim-result"></p>
     </div>
 
-    <h2>Three exam-style MCQs</h2>
+    <h2>Exam-style MCQs</h2>
     <div id="mcqs"></div>
 
     <div id="mastery"></div>
   </div>
 
   <script type="module">
-    import { header, cat, readout, setReadout, mastery, pctOfOptimum } from "../assets/js/chapter.js?v=3";
-    import { equilibrium, csLinear, psLinear } from "../assets/js/econ.js?v=3";
-    import { Chart } from "../assets/js/graph.js?v=3";
-    import { renderMCQSet } from "../assets/js/mcq.js?v=3";
-    import { CHAPTER_MCQS } from "../assets/js/data/mcqs.js?v=3";
+    import { header, cat, readout, setReadout, mastery, pctOfOptimum, typesetMath } from "../assets/js/chapter.js?v=5";
+    import { equilibrium, csLinear, psLinear, ceEquilibrium, ceDemandQ, ceSupplyQ, ceConsumerSurplus, ceProducerSurplus } from "../assets/js/econ.js?v=5";
+    import { Chart } from "../assets/js/graph.js?v=5";
+    import { renderMCQSet } from "../assets/js/mcq.js?v=5";
+    import { CHAPTER_MCQS } from "../assets/js/data/mcqs.js?v=5";
 
     header({ num: 1, title: "🏪 Market Day" });
 
     document.getElementById("story").innerHTML = cat({
       name: "Mayor Mittens",
       emoji: "🐈‍⬛",
-      line: "Many bakeries, many cats, free entry. Find the price where supply meets demand. At that price, surplus is maximized — that's the First Welfare Theorem in one sentence.",
+      line: "Many bakeries, many cats, free entry. Find the price where supply meets demand. Try both linear and constant-elasticity shapes — the latter is closer to what the exam may throw at you.",
     });
 
-    // Random linear D/S
-    const a = 24 + Math.floor(Math.random() * 8); // 24..31
-    const b = 1;
-    const c = 0;
-    const d = 0.5 + Math.random() * 0.6;
-    const params = { a, b, c, d };
-    const eq = equilibrium(params);
+    // ---- Linear parameters
+    const lin = {
+      a: 24 + Math.floor(Math.random() * 6),
+      b: 1,
+      c: 0,
+      d: 0.5 + Math.random() * 0.5,
+    };
+    const eqLin = equilibrium(lin);
 
-    document.getElementById("d-eq").textContent = `q = ${a} − ${b}·p`;
-    document.getElementById("s-eq").textContent = `q = ${d.toFixed(2)}·p`;
-
-    document.getElementById("readout").innerHTML = readout([
-      { id: "qd", label: "q_d at p", value: "—" },
-      { id: "qs", label: "q_s at p", value: "—" },
-      { id: "gap", label: "Gap |qd − qs|", value: "—" },
-      { id: "ts", label: "Total surplus (CS+PS)", value: "—" },
-    ]);
+    // ---- Constant-elasticity parameters
+    const ce = {
+      A: 80,         // demand intercept
+      eps: 1.5,      // |elasticity of demand|
+      B: 0.6,        // supply intercept
+      eta: 1.2,      // elasticity of supply
+    };
+    const eqCE = ceEquilibrium(ce);
 
     const slider = document.getElementById("p");
-    slider.max = (a / b).toFixed(0);
     const lab = document.getElementById("p-val");
+    const shapeSel = document.getElementById("shape");
     const chartHost = document.getElementById("chart");
 
+    document.getElementById("readout").innerHTML = readout([
+      { id: "qd", label: "$q_d$ at $p$", value: "—" },
+      { id: "qs", label: "$q_s$ at $p$", value: "—" },
+      { id: "gap", label: "Gap $|q_d - q_s|$", value: "—" },
+      { id: "ts", label: "Total surplus", value: "—" },
+    ]);
+
+    function shape() { return shapeSel.value; }
+    function currentEq() { return shape() === "linear" ? eqLin : eqCE; }
+
     function drawChart(p) {
-      const ch = new Chart({ qMax: a, pMax: (a / b) * 1.1 });
-      ch.drawAxes({ qLabel: "loaves", pLabel: "price" });
-      ch.drawDemand({ a, b });
-      ch.drawSupply({ c, d });
-      ch.drawPriceLine(p, `p = ${p.toFixed(1)}`, "pmax");
-      // Fill CS and PS at the *traded* quantity = min(qd, qs)
-      const qd = a - b * p;
-      const qs = c + d * p;
-      const traded = Math.min(qd, qs);
-      const pChoke = a / b;
-      // CS triangle under D above p, to the left of traded
-      ch.fillPolygon([[0, p], [0, pChoke], [traded, p + (pChoke - p) * (1 - traded / qd)], [traded, p]], "cs");
-      ch.fillPolygon([[0, 0], [0, p], [traded, p], [traded, (traded - c) / d]], "ps");
-      ch.marker(eq.q, eq.p, ` eq`);
-      ch.mountInto(chartHost);
+      if (shape() === "linear") {
+        const { a, b, c, d } = lin;
+        const ch = new Chart({ qMax: a, pMax: (a / b) * 1.1 });
+        ch.drawAxes({ qLabel: "loaves", pLabel: "price" });
+        ch.drawDemand({ a, b });
+        ch.drawSupply({ c, d });
+        ch.drawPriceLine(p, `p = ${p.toFixed(1)}`, "pmax");
+        const qd = a - b * p, qs = c + d * p;
+        const traded = Math.min(qd, qs);
+        const pChoke = a / b;
+        ch.fillPolygon([[0, p], [0, pChoke], [traded, p + (pChoke - p) * (1 - traded / qd)], [traded, p]], "cs");
+        ch.fillPolygon([[0, 0], [0, p], [traded, p], [traded, (traded - c) / d]], "ps");
+        ch.marker(eqLin.q, eqLin.p, ` eq`);
+        ch.mountInto(chartHost);
+      } else {
+        // Build chart manually using points; draw curves via polyline
+        const NS = "http://www.w3.org/2000/svg";
+        const W = 520, H = 360, pad = 40;
+        const qMax = Math.max(eqCE.q * 2.5, 40);
+        const pMax = Math.max(eqCE.p * 2.5, 20);
+        const X = q => pad + (q / qMax) * (W - 2 * pad);
+        const Y = pp => H - pad - (pp / pMax) * (H - 2 * pad);
+        const svg = document.createElementNS(NS, "svg");
+        svg.setAttribute("class", "chart");
+        svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+        function line(x1, y1, x2, y2, cls) {
+          const l = document.createElementNS(NS, "line");
+          l.setAttribute("x1", x1); l.setAttribute("y1", y1);
+          l.setAttribute("x2", x2); l.setAttribute("y2", y2);
+          l.setAttribute("class", cls);
+          svg.appendChild(l);
+        }
+        function poly(points, cls) {
+          const el = document.createElementNS(NS, "polyline");
+          el.setAttribute("class", cls);
+          el.setAttribute("points", points.map(([q, pp]) => `${X(q)},${Y(pp)}`).join(" "));
+          el.setAttribute("fill", "none");
+          svg.appendChild(el);
+        }
+        // axes
+        line(pad, H - pad, W - pad, H - pad, "axis");
+        line(pad, pad / 2, pad, H - pad, "axis");
+        // demand: q = A p^-ε, draw for p ∈ [0.5, pMax]
+        const pts = [];
+        for (let pp = 0.5; pp <= pMax; pp += pMax / 200) {
+          const q = Math.min(qMax, ceDemandQ(pp, ce));
+          if (q <= 0 || q > qMax) continue;
+          pts.push([q, pp]);
+        }
+        poly(pts, "demand");
+        // supply
+        const sps = [];
+        for (let pp = 0; pp <= pMax; pp += pMax / 200) {
+          const q = Math.min(qMax, ceSupplyQ(pp, ce));
+          if (q > qMax) continue;
+          sps.push([q, pp]);
+        }
+        poly(sps, "supply");
+        // your price line
+        line(X(0), Y(p), X(qMax), Y(p), "pmax");
+        // eq marker
+        const c = document.createElementNS(NS, "circle");
+        c.setAttribute("cx", X(eqCE.q)); c.setAttribute("cy", Y(eqCE.p));
+        c.setAttribute("r", 5); c.setAttribute("fill", "#d4a574");
+        svg.appendChild(c);
+        chartHost.innerHTML = "";
+        chartHost.appendChild(svg);
+      }
     }
 
     function update() {
       const p = +slider.value;
       lab.textContent = `p = ${p}`;
-      const qd = a - b * p;
-      const qs = c + d * p;
+      let qd, qs, ts;
+      if (shape() === "linear") {
+        const { a, b, c, d } = lin;
+        qd = a - b * p; qs = c + d * p;
+        const traded = Math.min(qd, qs);
+        const csAdj = 0.5 * (a / b - p) * traded;
+        const psAdj = 0.5 * p * traded;
+        ts = csAdj + psAdj;
+      } else {
+        qd = ceDemandQ(p, ce);
+        qs = ceSupplyQ(p, ce);
+        // For ε > 1, CS is finite. Compute at equilibrium for total surplus reference.
+        const traded = Math.min(qd, qs);
+        const cs = ceConsumerSurplus(p, ce);
+        const ps = ceProducerSurplus(p, ce);
+        ts = (isFinite(cs) ? cs : 0) + ps;
+      }
       const gap = Math.abs(qd - qs);
-      const traded = Math.min(qd, qs);
-      const cs = csLinear({ a, b, p });
-      const ps = psLinear({ c, d, p });
-      // CS+PS at non-clearing price uses traded q for both sides
-      const csAdj = 0.5 * (a / b - p) * traded;
-      const psAdj = 0.5 * p * traded;
-      const ts = csAdj + psAdj;
       setReadout("qd", qd.toFixed(2));
       setReadout("qs", qs.toFixed(2));
       setReadout("gap", gap.toFixed(2), gap < 0.5 ? "good" : "bad");
-      setReadout("ts", ts.toFixed(2));
+      setReadout("ts", isFinite(ts) ? ts.toFixed(2) : "∞");
       drawChart(p);
     }
+
+    function updateShape() {
+      const s = shape();
+      if (s === "linear") {
+        document.getElementById("params").innerHTML = `$a = ${lin.a},\\ b = ${lin.b},\\ d = ${lin.d.toFixed(2)}$`;
+        slider.max = (lin.a / lin.b).toFixed(0);
+        slider.value = (eqLin.p * 0.6).toFixed(1);
+      } else {
+        document.getElementById("params").innerHTML = `$A = ${ce.A},\\ \\varepsilon = ${ce.eps},\\ B = ${ce.B},\\ \\eta = ${ce.eta}$`;
+        slider.max = (eqCE.p * 2.5).toFixed(1);
+        slider.value = (eqCE.p * 0.6).toFixed(1);
+      }
+      typesetMath(document.getElementById("params"));
+      update();
+    }
+    shapeSel.addEventListener("change", updateShape);
     slider.addEventListener("input", update);
-    update();
+    updateShape();
 
     let simPct = 0, mcqPct = 0, simDone = false, mcqDone = false;
     const tryFinish = () => {
@@ -127,14 +225,16 @@
         mastery({
           chapterId: 1, simPct, mcqPct,
           formulas: [
-            `Equilibrium: solve $a - b p = c + d p \\Rightarrow p^* = \\frac{a - c}{b + d}$`,
-            `Long-run competitive eq: $P = MC = \\min AC$, $\\pi_{\\text{econ}} = 0$`,
-            `1st Welfare Theorem: competitive eq is Pareto efficient (with no externalities, no asymmetric info)`,
-            `$CS = \\frac{1}{2}(p_{\\text{choke}} - p) q_d$ &nbsp;;&nbsp; $PS = \\frac{1}{2}(p - p_{\\min}) q_s$`,
+            `Linear eq: $a - bp = c + dp \\Rightarrow p^* = \\frac{a-c}{b+d}$`,
+            `Constant-elasticity eq: $A p^{-\\varepsilon} = B p^{\\eta} \\Rightarrow p^* = (A/B)^{1/(\\varepsilon + \\eta)}$`,
+            `LR competitive eq: $P = MC = \\min AC$, $\\pi_{\\text{econ}} = 0$`,
+            `1st Welfare Theorem requires no externalities, no asymmetric info, price-taking`,
+            `Constant-elasticity Lerner: $L = 1/\\varepsilon$ (so monopoly $p = \\frac{MC}{1 - 1/\\varepsilon}$)`,
           ],
           traps: [
-            `"LR equilibrium = P = min MC" — wrong. It's <strong>P = MC = min AC</strong>. MC pierces AC at min AC, so MC equals AC there.`,
-            `1st Welfare Theorem REQUIRES no externalities, complete markets, price-taking — strip any assumption and it can fail.`,
+            `"LR equilibrium $= P = \\min MC$" — wrong. It is <strong>$P = MC = \\min AC$</strong>.`,
+            `"Constant-elasticity demand has constant slope" — wrong; slope changes, elasticity is constant.`,
+            `"With $\\varepsilon \\leq 1$, monopoly has a finite price" — wrong; the markup is unbounded.`,
           ],
         });
       }
@@ -142,17 +242,16 @@
 
     document.getElementById("check").addEventListener("click", () => {
       const p = +slider.value;
-      // Score by how close to equilibrium price
-      const error = Math.abs(p - eq.p) / eq.p;
-      simPct = Math.round(Math.max(0, 1 - error / 0.1) * 100); // within 10% = 100
-      if (Math.abs(p - eq.p) < 0.25) simPct = 100;
+      const eq = currentEq();
+      const err = Math.abs(p - eq.p) / eq.p;
+      simPct = Math.round(Math.max(0, 1 - err / 0.1) * 100);
+      if (Math.abs(p - eq.p) < 0.2) simPct = 100;
       document.getElementById("sim-result").innerHTML = `
         Equilibrium price: <strong>${eq.p.toFixed(2)}</strong>, quantity: <strong>${eq.q.toFixed(2)}</strong>.
         Your price: <strong>${p.toFixed(2)}</strong>.
         Score: <span class="flash ${simPct >= 80 ? "good" : simPct >= 50 ? "warn" : "bad"}">${simPct}%</span>
       `;
-      simDone = true;
-      tryFinish();
+      simDone = true; tryFinish();
     });
 
     renderMCQSet(document.getElementById("mcqs"), CHAPTER_MCQS[1], {

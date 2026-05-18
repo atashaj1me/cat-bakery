@@ -247,6 +247,46 @@ export function linearElasticity({ a, b, p }) {
   return -b * (p / q);
 }
 
+// --- Non-linear curves (exam-grade) ----------------------------------------
+//
+// Constant-elasticity demand: q = A · p^(−ε), ε > 0 the (absolute) elasticity.
+// MR for constant-elasticity demand: MR = p · (1 − 1/ε).
+// CS for ε > 1: $\int_p^{\infty} A x^{-\varepsilon} dx = \frac{A p^{1-\varepsilon}}{\varepsilon - 1}$.
+// Constant-elasticity supply: q = B · p^(η), η > 0.
+// Equilibrium with both: A · p^(-ε) = B · p^(η) ⇒ p* = (A/B)^(1/(ε+η)).
+
+export function ceDemandQ(p, { A, eps }) { return A * Math.pow(p, -eps); }
+export function ceSupplyQ(p, { B, eta }) { return B * Math.pow(p, eta); }
+
+export function ceEquilibrium({ A, eps, B, eta }) {
+  const p = Math.pow(A / B, 1 / (eps + eta));
+  const q = A * Math.pow(p, -eps);
+  return { p, q };
+}
+
+// CS under constant-elasticity demand q = A p^{-ε}, for ε > 1.
+// Returns Infinity if ε ≤ 1.
+export function ceConsumerSurplus(p, { A, eps }) {
+  if (eps <= 1) return Infinity;
+  return (A * Math.pow(p, 1 - eps)) / (eps - 1);
+}
+
+// PS under constant-elasticity supply q = B p^{η}.
+// $\int_0^p B x^{\eta} dx = \frac{B p^{1+\eta}}{1+\eta}$, but PS = pq − that.
+export function ceProducerSurplus(p, { B, eta }) {
+  const q = B * Math.pow(p, eta);
+  const totalCost = (B * Math.pow(p, 1 + eta)) / (1 + eta);
+  return p * q - totalCost;
+}
+
+// Constant-elasticity monopoly: MR = MC ⇒ p · (1 − 1/ε) = MC ⇒ p = MC / (1 − 1/ε).
+export function ceMonopoly({ A, eps, mc }) {
+  if (eps <= 1) return { p: Infinity, q: 0 }; // unbounded markup
+  const p = mc / (1 - 1 / eps);
+  const q = A * Math.pow(p, -eps);
+  return { p, q, lerner: 1 / eps };
+}
+
 // --- Helpers ----------------------------------------------------------------
 
 export function round(x, n = 2) {
@@ -268,6 +308,8 @@ if (typeof window !== "undefined") {
     externalityDriving, pigouvianTax,
     profitOneInput, profitTwoInput, cobbDouglasDemand, linearElasticity,
     csLinear, psLinear, inverseDemand, inverseSupply,
+    ceDemandQ, ceSupplyQ, ceEquilibrium,
+    ceConsumerSurplus, ceProducerSurplus, ceMonopoly,
     round, fmt,
   };
 }
