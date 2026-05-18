@@ -551,6 +551,40 @@ ul.trap-list li { margin-bottom: 8px; color: var(--ink-soft); }
 .letter a { color: var(--letter-accent); }
 .letter ol, .letter ul { padding-left: 22px; }
 
+/* Collapsed letter shown on phases > 0 — keeps problem setup re-accessible */
+.letter-collapsed {
+  background: var(--paper);
+  border: 1px dashed var(--accent-dark);
+  border-radius: var(--radius);
+  margin: 14px 0;
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+.letter-collapsed > summary {
+  padding: 12px 16px;
+  cursor: pointer;
+  font-family: var(--font);
+  font-size: 0.95em;
+  color: var(--accent);
+  list-style: none;
+  position: relative;
+  user-select: none;
+  background: linear-gradient(180deg, var(--paper-2), var(--paper));
+}
+.letter-collapsed > summary::-webkit-details-marker { display: none; }
+.letter-collapsed > summary::after {
+  content: "▸";
+  position: absolute;
+  right: 18px;
+  top: 12px;
+  color: var(--accent);
+  transition: transform 0.15s ease;
+}
+.letter-collapsed[open] > summary::after { transform: rotate(90deg); }
+.letter-collapsed > summary em { color: var(--ink-soft); font-style: italic; }
+.letter-collapsed[open] > summary { border-bottom: 1px solid var(--border-soft); }
+.letter-collapsed > .letter { margin: 14px 14px 14px 14px; }
+
 .consequence-banner {
   background: linear-gradient(135deg, var(--paper-2), var(--paper));
   border: 1px solid var(--border);
@@ -960,6 +994,29 @@ ul.trap-list li { margin-bottom: 8px; color: var(--ink-soft); }
 }
 
 ::selection { background: var(--accent); color: #1a1410; }
+
+/* ---------- Vault tile (index page) ---------- */
+.campaign-tile.vault {
+  background:
+    radial-gradient(circle at 30% 20%, rgba(212, 165, 116, 0.22), transparent 60%),
+    linear-gradient(135deg, #3a2418, #1d1108 80%);
+  border: 1px solid var(--accent);
+  color: var(--ink);
+  box-shadow: var(--shadow), 0 0 24px rgba(212, 165, 116, 0.18);
+  margin-bottom: 16px;
+}
+.campaign-tile.vault:hover {
+  box-shadow: var(--shadow), 0 0 32px rgba(212, 165, 116, 0.35);
+}
+.campaign-tile.vault .lead {
+  color: var(--accent);
+  text-shadow: 0 0 12px rgba(212, 165, 116, 0.45);
+}
+.campaign-tile.vault .sub { color: var(--ink); }
+.campaign-tile.vault .cta {
+  background: rgba(20, 14, 8, 0.85);
+  color: var(--accent);
+}
 
 /* ---------- Cheatsheet Vault ---------- */
 .vault-filters {
