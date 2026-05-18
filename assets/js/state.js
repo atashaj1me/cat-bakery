@@ -47,6 +47,8 @@ const DEFAULT_BAKERY = {
   // ---- Cheatsheet Vault ----
   cheatsheets: [],          // ids of unlocked cheats
   cheatProgress: {},        // { cheatId: count } for "needs N" cheats
+  // ---- Red Hot Pan emergency access ----
+  redHotPan: false,         // when true: all locks bypassed, all writes no-op'd
 };
 
 const DEFAULT_STATE = {
@@ -93,7 +95,27 @@ function write(state) {
 export const State = {
   get: () => read(),
 
-  isUnlocked(id) { return !!read().unlocked[id]; },
+  // ---- Red Hot Pan (emergency study access) ----
+  isRedHotPan() { return !!read().bakery.redHotPan; },
+
+  toggleRedHotPan() {
+    const s = read();
+    s.bakery.redHotPan = !s.bakery.redHotPan;
+    write(s);
+    return s.bakery.redHotPan;
+  },
+
+  setRedHotPan(on) {
+    const s = read();
+    s.bakery.redHotPan = !!on;
+    write(s);
+  },
+
+  isUnlocked(id) {
+    const s = read();
+    if (s.bakery.redHotPan) return true;
+    return !!s.unlocked[id];
+  },
 
   unlock(id) {
     const s = read();
@@ -103,6 +125,7 @@ export const State = {
 
   recordChapter(chapterId, simPct, mcqPct) {
     const s = read();
+    if (s.bakery.redHotPan) return { sim: simPct, mcq: mcqPct, best: 0 };
     const total = Math.round(0.5 * simPct + 0.5 * mcqPct);
     const prevBest = s.chapterScore[chapterId]?.best ?? 0;
     s.chapterScore[chapterId] = {
@@ -123,12 +146,14 @@ export const State = {
 
   recordEssay(essayId, pct) {
     const s = read();
+    if (s.bakery.redHotPan) return;
     s.essayBest[essayId] = Math.max(s.essayBest[essayId] ?? 0, Math.round(pct));
     write(s);
   },
 
   recordMock({ mcq, essay, total, durationSec }) {
     const s = read();
+    if (s.bakery.redHotPan) return;
     s.mockHistory.unshift({
       date: new Date().toISOString().slice(0, 10),
       mcq, essay, total, durationSec,
@@ -172,6 +197,7 @@ export const State = {
   // ----- bakery: Vanilla -----
   applyDayResult({ day, title, yourAnswer, correctAnswer, cashDelta, repDelta, summary }) {
     const s = read();
+    if (s.bakery.redHotPan) return s.bakery;   // emergency mode: no progress saved
     s.bakery.cash = Math.round((s.bakery.cash + cashDelta) * 100) / 100;
     s.bakery.reputation = Math.max(0, Math.min(5, Math.round((s.bakery.reputation + repDelta) * 10) / 10));
     if (!s.bakery.daysCompleted.includes(day)) s.bakery.daysCompleted.push(day);
@@ -188,6 +214,7 @@ export const State = {
 
   awardAchievement(id) {
     const s = read();
+    if (s.bakery.redHotPan) return false;     // emergency mode: no achievements
     if (!s.bakery.achievements.includes(id)) {
       s.bakery.achievements.push(id);
       write(s);
@@ -205,22 +232,32 @@ export const State = {
 
   resetBakery() {
     const s = read();
-    // Reset Vanilla only — keep Hell, Apocalypse, and achievements.
+    // Reset Vanilla play-state only. PRESERVE: all graduation flags, all Hell
+    // and Apocalypse state, achievements, cheats, chapter scores, mock history.
+    // Graduation is a permanent milestone — restarting Vanilla replays its days
+    // but does NOT relock Hell or Apocalypse access.
     const base = structuredClone(DEFAULT_BAKERY);
     s.bakery = {
       ...base,
       mode: s.bakery.mode,
+      // Vanilla graduation persists (so Hell stays unlocked)
+      graduated: s.bakery.graduated,
+      // Hell — preserve everything
       hellCash: s.bakery.hellCash, hellReputation: s.bakery.hellReputation,
       hellDay: s.bakery.hellDay, hellDaysCompleted: s.bakery.hellDaysCompleted,
       hellLog: s.bakery.hellLog, hellGraduated: s.bakery.hellGraduated,
       hellInProgress: s.bakery.hellInProgress, hellLoansTaken: s.bakery.hellLoansTaken,
       hellTech: s.bakery.hellTech,
+      // Apocalypse — preserve everything
       apocalypseCash: s.bakery.apocalypseCash, apocalypseReputation: s.bakery.apocalypseReputation,
       apocalypseDay: s.bakery.apocalypseDay, apocalypseDaysCompleted: s.bakery.apocalypseDaysCompleted,
       apocalypseLog: s.bakery.apocalypseLog, apocalypseGraduated: s.bakery.apocalypseGraduated,
       apocalypseInProgress: s.bakery.apocalypseInProgress, apocalypseLoansTaken: s.bakery.apocalypseLoansTaken,
       apocalypseTech: s.bakery.apocalypseTech,
+      // Permanent collections
       achievements: s.bakery.achievements,
+      cheatsheets: s.bakery.cheatsheets,
+      cheatProgress: s.bakery.cheatProgress,
     };
     write(s);
   },
@@ -241,6 +278,7 @@ export const State = {
 
   applyHellDayResult({ day, title, cashDelta, repDelta, summary, phaseScores }) {
     const s = read();
+    if (s.bakery.redHotPan) return s.bakery;
     s.bakery.hellCash = Math.round((s.bakery.hellCash + cashDelta) * 100) / 100;
     s.bakery.hellReputation = Math.max(0, Math.min(5, Math.round((s.bakery.hellReputation + repDelta) * 10) / 10));
     if (!s.bakery.hellDaysCompleted.includes(day)) s.bakery.hellDaysCompleted.push(day);
@@ -264,13 +302,15 @@ export const State = {
 
   resetHell() {
     const s = read();
+    // Reset Hell play-state. PRESERVE hellGraduated and apocalypseGraduated
+    // so Apocalypse access does not regress when a player replays Hell.
     const baseHell = structuredClone(DEFAULT_BAKERY);
     s.bakery.hellCash = baseHell.hellCash;
     s.bakery.hellReputation = baseHell.hellReputation;
     s.bakery.hellDay = baseHell.hellDay;
     s.bakery.hellDaysCompleted = [];
     s.bakery.hellLog = [];
-    s.bakery.hellGraduated = false;
+    // hellGraduated: preserved (permanent milestone)
     s.bakery.hellInProgress = null;
     s.bakery.hellLoansTaken = 0;
     s.bakery.hellTech = null;   // re-roll the slot machine on next entry
@@ -292,6 +332,7 @@ export const State = {
 
   applyApocalypseDayResult({ day, title, cashDelta, repDelta, summary, phaseScores }) {
     const s = read();
+    if (s.bakery.redHotPan) return s.bakery;
     s.bakery.apocalypseCash = Math.round((s.bakery.apocalypseCash + cashDelta) * 100) / 100;
     s.bakery.apocalypseReputation = Math.max(0, Math.min(5,
       Math.round((s.bakery.apocalypseReputation + repDelta) * 10) / 10));
@@ -316,6 +357,7 @@ export const State = {
   // ----- Cheatsheet Vault -----
   saveCheats({ unlocked, progress }) {
     const s = read();
+    if (s.bakery.redHotPan) return;           // emergency mode: no cheat unlocks
     s.bakery.cheatsheets = unlocked;
     s.bakery.cheatProgress = progress;
     write(s);
@@ -330,12 +372,14 @@ export const State = {
 
   resetApocalypse() {
     const s = read();
+    // Reset Apocalypse play-state. PRESERVE apocalypseGraduated so the
+    // Master Examiner badge is not undone by a replay.
     s.bakery.apocalypseCash = 400;
     s.bakery.apocalypseReputation = 3.0;
     s.bakery.apocalypseDay = 1;
     s.bakery.apocalypseDaysCompleted = [];
     s.bakery.apocalypseLog = [];
-    s.bakery.apocalypseGraduated = false;
+    // apocalypseGraduated: preserved (permanent milestone)
     s.bakery.apocalypseInProgress = null;
     s.bakery.apocalypseLoansTaken = 0;
     s.bakery.apocalypseTech = null;

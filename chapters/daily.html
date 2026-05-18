@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=JetBrains+Mono:wght@400;600&display=swap">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV" crossorigin="anonymous">
-  <link rel="stylesheet" href="../assets/css/style.css?v=9">
+  <link rel="stylesheet" href="../assets/css/style.css?v=10">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ctext y='52' font-size='52'%3E🥐%3C/text%3E%3C/svg%3E">
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" integrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8" crossorigin="anonymous"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" integrity="sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05" crossorigin="anonymous"></script>
@@ -33,16 +33,18 @@
   </div>
 
   <script type="module">
-    import { State } from "../assets/js/state.js?v=9";
-    import { DAYS, getDay, flavorLine } from "../assets/js/data/days.js?v=9";
-    import { HELL_DAYS, getHellDay } from "../assets/js/data/days-hell.js?v=9";
-    import { APOCALYPSE_DAYS, getApocalypseDay } from "../assets/js/data/days-apocalypse.js?v=9";
-    import { ARC_SCROLLS, NPC_INTERJECTIONS, MEMORY_TEMPLATES } from "../assets/js/data/lore-apocalypse.js?v=9";
-    import { CATS, purchase } from "../assets/js/data/cats.js?v=9";
-    import { TECHS, TECH_LIST, getTech, rollTech } from "../assets/js/data/technologies.js?v=9";
-    import { FINAL_MOCK, MOCK_REMEDIATION } from "../assets/js/data/mcqs.js?v=9";
-    import { tryUnlockCheats } from "../assets/js/cheats.js?v=9";
-    import { CHEAT_BY_ID } from "../assets/js/data/cheatsheets.js?v=9";
+
+    import "../assets/js/red-hot-pan.js?v=10";
+    import { State } from "../assets/js/state.js?v=10";
+    import { DAYS, getDay, flavorLine } from "../assets/js/data/days.js?v=10";
+    import { HELL_DAYS, getHellDay } from "../assets/js/data/days-hell.js?v=10";
+    import { APOCALYPSE_DAYS, getApocalypseDay } from "../assets/js/data/days-apocalypse.js?v=10";
+    import { ARC_SCROLLS, NPC_INTERJECTIONS, MEMORY_TEMPLATES } from "../assets/js/data/lore-apocalypse.js?v=10";
+    import { CATS, purchase } from "../assets/js/data/cats.js?v=10";
+    import { TECHS, TECH_LIST, getTech, rollTech } from "../assets/js/data/technologies.js?v=10";
+    import { FINAL_MOCK, MOCK_REMEDIATION } from "../assets/js/data/mcqs.js?v=10";
+    import { tryUnlockCheats } from "../assets/js/cheats.js?v=10";
+    import { CHEAT_BY_ID } from "../assets/js/data/cheatsheets.js?v=10";
 
     // --- mode detection from URL ---
     const urlParams = new URLSearchParams(window.location.search);
@@ -1133,8 +1135,8 @@
     function render() {
       try {
         const b = State.bakery();
-        // Hell mode requires Vanilla graduation
-        if (MODE === "hell" && !b.graduated) {
+        // Hell mode requires Vanilla graduation — unless Red Hot Pan is on
+        if (MODE === "hell" && !b.graduated && !b.redHotPan) {
           document.getElementById("day-host").innerHTML = `
             <div class="errpanel">
               🔒 <strong>Hell Market is locked.</strong>
@@ -1144,8 +1146,8 @@
           renderHeader(b); renderDashboard(b); renderProgress(b); renderScene(b);
           return;
         }
-        // Apocalypse requires Hell graduation
-        if (MODE === "apocalypse" && !b.hellGraduated) {
+        // Apocalypse requires Hell graduation — unless Red Hot Pan is on
+        if (MODE === "apocalypse" && !b.hellGraduated && !b.redHotPan) {
           document.getElementById("day-host").innerHTML = `
             <div class="errpanel">
               🔒 <strong>Beyond Hell: Apocalypse is locked.</strong>

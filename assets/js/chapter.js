@@ -128,20 +128,63 @@ export function near(value, target, tol = 0.5) {
 }
 
 /**
- * Render the chapter's pedagogical extras (recipe, pitfalls, worked examples)
- * into a host element. Each section is rendered as collapsible <details>.
+ * Render the chapter's pedagogical extras (recipe, pitfalls, worked examples,
+ * Chartered Baker Guild's Standard concepts) into a host element.
+ * Each section is rendered as collapsible <details>.
  */
 export async function renderNotebookExtras(hostId, chapterId) {
   const host = document.getElementById(hostId);
   if (!host) return;
-  let extras;
+  let extras, concepts;
   try {
     const mod = await import("./data/notebook-extras.js");
     extras = mod.NOTEBOOK_EXTRAS[chapterId];
-  } catch (_) { return; }
-  if (!extras) return;
+  } catch (_) {}
+  try {
+    const cmod = await import("./data/concepts.js");
+    concepts = cmod.CONCEPTS_BY_CHAPTER[chapterId] || [];
+  } catch (_) { concepts = []; }
+  if (!extras && (!concepts || !concepts.length)) return;
+  extras = extras || {};
 
   let html = "";
+
+  // Concept list — the Chartered Baker Guild's Standard for this chapter
+  if (concepts.length) {
+    html += `
+      <details class="extra-section standard">
+        <summary><span class="extra-icon">📖</span> Chartered Baker Guild's Standard (${concepts.length} concepts)</summary>
+        <p style="padding: 0 18px; color: var(--ink-soft); font-size: 0.9em;">
+          Terms, definitions, exam-pattern recognition, and traps. For the master glossary across all chapters,
+          <a href="standard.html" target="_blank">open the full Standard</a>.
+        </p>
+        <div class="concept-list-inline">
+          ${concepts.map(c => `
+            <details class="concept-card">
+              <summary>
+                <span class="concept-term">${c.term}</span>
+                <span class="concept-meta">
+                  <span class="concept-cat">${c.category}</span>
+                </span>
+              </summary>
+              <div class="concept-body">
+                <div class="concept-section">
+                  <span class="concept-label">Definition</span>
+                  <div class="concept-text">${c.definition}</div>
+                </div>
+                ${c.math ? `<div class="concept-section"><span class="concept-label">Formal statement</span><div class="concept-math">${c.math}</div></div>` : ""}
+                ${c.recognise ? `<div class="concept-section"><span class="concept-label">Recognise</span><div class="concept-text">${c.recognise}</div></div>` : ""}
+                ${c.applies ? `<div class="concept-section"><span class="concept-label">Applies to</span><div class="concept-text">${c.applies}</div></div>` : ""}
+                ${c.example ? `<div class="concept-section"><span class="concept-label">Example</span><div class="concept-text concept-example">${c.example}</div></div>` : ""}
+                ${c.pitfall ? `<div class="concept-section concept-pitfall-section"><span class="concept-label">⚠️ Pitfall</span><div class="concept-text">${c.pitfall}</div></div>` : ""}
+              </div>
+            </details>
+          `).join("")}
+        </div>
+      </details>
+    `;
+  }
+
   if (extras.recipe) {
     html += `
       <details class="extra-section recipe" open>

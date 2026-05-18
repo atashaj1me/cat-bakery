@@ -1,0 +1,425 @@
+// concepts.js — Chartered Baker Guild's Standard.
+//
+// A glossary of every term, concept, and keyword the ECON201 exam might use.
+// Complement to the Cheatsheet Vault: where Vault gives ALGORITHMIC tricks,
+// the Standard gives CONCEPTUAL understanding — definition, when it applies,
+// how to use it on a problem, what to watch for.
+//
+// Schema per entry:
+//   term            — the exact terminology used on the exam
+//   chapterId       — primary chapter (0-6)
+//   definition      — plain-language, 1-2 sentence definition
+//   math            — formal mathematical statement (optional)
+//   recognise       — "When you see this on the exam, recognise..." (pattern cue)
+//   applies         — applications + which problem types invoke it
+//   example         — short worked instance (1-line)
+//   pitfall         — most common mis-application
+
+export const CONCEPTS = [
+  // ===== Chapter 0: Pre-midterm foundations =====
+  {
+    term: "Cobb-Douglas utility",
+    chapterId: 0, category: "consumer",
+    definition: "A utility function of the form $u(x, y) = x^{\\alpha} y^{\\beta}$. Produces interior solutions with constant expenditure shares.",
+    math: "$u(x, y) = x^{\\alpha} y^{\\beta}, \\quad x^* = \\frac{\\alpha}{\\alpha + \\beta} \\cdot \\frac{I}{p_x}$",
+    recognise: "An exponent on each good, both positive. Question says 'utility from bread and pastry is $x \\cdot y$' (which is $x^1 y^1$).",
+    applies: "Demand derivation, income/substitution effects, expenditure shares, Hicksian decomposition.",
+    example: "$u = x y$, $I = 12$, $p_x = 2$, $p_y = 3$ ⇒ $x^* = 3$, $y^* = 2$.",
+    pitfall: "Cobb-Douglas does NOT have constant elasticity of DEMAND; it has constant expenditure SHARES.",
+  },
+  {
+    term: "Quasilinear utility",
+    chapterId: 0, category: "consumer",
+    definition: "Utility of the form $u(x, y) = v(x) + y$ where $v$ is concave. Zero income effect on $x$.",
+    math: "$v'(x^*) = p_x / p_y$",
+    recognise: "Utility has a function of $x$ added to $y$ alone (no product). Income changes shift all spending to $y$.",
+    applies: "Welfare analysis (CS = EV = CV), price-ceiling waiting time problems.",
+    example: "Quasilinear over cake: $v(c) = 8\\sqrt{c}$, $p_c = 2$ ⇒ $c^* = 4$, independent of income.",
+    pitfall: "Quasilinear has zero income effect ONLY on $x$; income changes show up entirely in the $y$ residual.",
+  },
+  {
+    term: "Perfect substitutes",
+    chapterId: 0, category: "consumer",
+    definition: "Linear utility $u(x, y) = ax + by$. Consumers spend all income on the good with higher utility-per-coin.",
+    math: "If $a/p_x > b/p_y$ ⇒ buy only $x$; if $a/p_x < b/p_y$ ⇒ buy only $y$.",
+    recognise: "Straight-line indifference curves. The phrase 'I value calories from bread and pastry equally per gram' is a tell.",
+    applies: "Corner-solution problems, bang-per-buck reasoning.",
+    example: "$u = 4x + 5y$, $p_x = 1, p_y = 2$, $I = 10$. $4/1 = 4 > 5/2 = 2.5$ ⇒ spend all on $x$ ⇒ buys 10 units of $x$.",
+    pitfall: "Never has an interior solution unless prices align exactly with the utility ratio.",
+  },
+  {
+    term: "Perfect complements (Leontief)",
+    chapterId: 0, category: "consumer",
+    definition: "Utility $u(x, y) = \\min(ax, by)$. Consumer chooses the kink point $ax = by$.",
+    math: "$ax = by$ combined with budget gives $x^* = I / (p_x + (a/b) p_y)$.",
+    recognise: "L-shaped indifference curves. Phrases like 'left shoe and right shoe', 'sugar and coffee always in fixed ratio'.",
+    applies: "Fixed-proportions problems, multi-input production with no substitutability.",
+    example: "Tabby Tim needs 1 loaf with 1 cupcake. $p_{\\text{loaf}} = 3, p_{\\text{cupcake}} = 5, I = 24$ ⇒ 3 sets.",
+    pitfall: "Don't compute MRS or tangency — there is no tangency. Use the kink directly.",
+  },
+  {
+    term: "Marginal rate of substitution (MRS)",
+    chapterId: 0, category: "consumer",
+    definition: "The slope of the indifference curve: how much $y$ a consumer would give up for one more $x$ while keeping utility constant.",
+    math: "$MRS = -\\frac{MU_x}{MU_y} = \\frac{dy}{dx}\\bigg|_{u=\\text{const}}$",
+    recognise: "Tangency condition: at an interior optimum, $|MRS| = p_x/p_y$.",
+    applies: "Solving consumer problems via tangency. Cobb-Douglas: $|MRS| = (\\alpha/\\beta)(y/x)$.",
+    example: "For $u = x y$: $|MRS| = y/x$. Set $y/x = p_x/p_y$.",
+    pitfall: "At corner solutions MRS need not equal the price ratio.",
+  },
+  {
+    term: "Budget line",
+    chapterId: 0, category: "consumer",
+    definition: "The set of consumption bundles a consumer can afford: $p_x \\cdot x + p_y \\cdot y = I$.",
+    math: "Slope $= -p_x/p_y$. Intercepts: $I/p_x$ on x-axis, $I/p_y$ on y-axis.",
+    recognise: "Price change → rotates line around the unchanged-good intercept. Income change → parallel shift.",
+    applies: "Visualising consumer choice, identifying corner vs interior solutions.",
+    pitfall: "A kink can appear in the budget line from things like food stamps, quantity discounts, or different borrow/save rates.",
+  },
+  {
+    term: "Marginal product of labour (MP_L)",
+    chapterId: 0, category: "producer",
+    definition: "The additional output from one more unit of labour, holding other inputs fixed.",
+    math: "$MP_L = \\partial y / \\partial L$",
+    recognise: "Any single-input production problem. Profit max sets $p \\cdot MP_L = w$.",
+    applies: "Derivation of factor demand, profit maximisation.",
+    example: "$y = a\\sqrt{L}$ ⇒ $MP_L = a/(2\\sqrt{L})$.",
+    pitfall: "Diminishing marginal product (per input) is NOT the same as decreasing returns to scale (all inputs together).",
+  },
+  {
+    term: "Returns to scale",
+    chapterId: 0, category: "producer",
+    definition: "How output changes when ALL inputs are scaled together by the same factor $\\lambda$.",
+    math: "Cobb-Douglas $y = x_1^{\\alpha} x_2^{\\beta}$: $\\alpha + \\beta > 1$ = increasing, $= 1$ = constant, $< 1$ = decreasing RTS.",
+    recognise: "Question scales BOTH inputs and asks if output more/less/same proportionally.",
+    applies: "Long-run cost structure, natural monopoly identification.",
+    pitfall: "Distinct from marginal returns to a single input. A function can have diminishing $MP_L$ AND constant RTS.",
+  },
+
+  // ===== Chapter 1: Equilibrium & welfare =====
+  {
+    term: "Competitive equilibrium",
+    chapterId: 1, category: "welfare",
+    definition: "Price and quantity at which $q_d(p) = q_s(p)$. All willing buyers and sellers transact.",
+    math: "Linear: $p^* = (a - c)/(b + d)$, $q^* = a - bp^*$.",
+    recognise: "Question asks for the 'clearing price' or 'market price'.",
+    applies: "Foundation for every distortion problem (you compare to this baseline).",
+    example: "$q_d = 24 - p$, $q_s = 0.5p$ ⇒ $p^* = 16$, $q^* = 8$.",
+    pitfall: "Always identify SR vs LR. LR equilibrium has additional condition $P = \\min AC$.",
+  },
+  {
+    term: "Consumer surplus (CS)",
+    chapterId: 1, category: "welfare",
+    definition: "The difference between what consumers are willing to pay and what they actually pay. Area BELOW demand, ABOVE price, up to the quantity traded.",
+    math: "Linear: $CS = \\tfrac{1}{2}(p_{\\text{choke}} - p) \\cdot q$",
+    recognise: "Question asks 'how much does the policy hurt consumers?' or computes welfare changes.",
+    applies: "Welfare comparisons across regimes (free trade vs tariff, ceiling vs no ceiling, etc.).",
+    pitfall: "At non-clearing prices, use the TRADED quantity (the shorter side), not both $q_d$ and $q_s$.",
+  },
+  {
+    term: "Producer surplus (PS)",
+    chapterId: 1, category: "welfare",
+    definition: "The difference between what producers receive and their marginal cost. Area ABOVE supply, BELOW price.",
+    math: "Linear: $PS = \\tfrac{1}{2}(p - p_{\\min}) \\cdot q$",
+    recognise: "Asks 'how much does the policy benefit producers?'.",
+    applies: "Welfare accounting, distinguishing tariff transfer to producers vs DWL.",
+    pitfall: "PS equals revenue minus VARIABLE cost (not total cost). Fixed costs don't enter.",
+  },
+  {
+    term: "First Welfare Theorem",
+    chapterId: 1, category: "welfare",
+    definition: "In a competitive market with no externalities or asymmetric information, the equilibrium is Pareto efficient.",
+    recognise: "Question asks whether a market outcome is efficient. Check: competitive? Complete markets? No externalities?",
+    applies: "Justifies $P = MC$ as efficient. Identifies which market failures break efficiency.",
+    pitfall: "Says NOTHING about income distribution. Vast inequality can still be Pareto efficient.",
+  },
+  {
+    term: "Long-run vs short-run supply",
+    chapterId: 1, category: "producer",
+    definition: "SR supply = MC curve above min AVC (firms operate as long as price covers variable cost). LR supply = horizontal at $\\min AC$ (free entry/exit drives profit to zero).",
+    math: "LR competitive eq: $P = MC = \\min AC$, $\\pi_{\\text{econ}} = 0$.",
+    recognise: "Words 'long run', 'free entry/exit', 'industry adjusts'.",
+    applies: "Tax/policy welfare in the long run, natural monopoly arguments.",
+    pitfall: "NOT $P = \\min MC$. Min MC has no economic meaning. $\\min AC$ is what matters.",
+  },
+
+  // ===== Chapter 2: Taxes & price controls =====
+  {
+    term: "Per-unit tax",
+    chapterId: 2, category: "distortion",
+    definition: "Government levies $t$ per unit traded. Drives a wedge between consumer price $p_c$ and producer price $p_s = p_c - t$.",
+    math: "Linear: $p_c = (a - c + d t)/(b + d)$, $p_s = p_c - t$, revenue $= t \\cdot q$.",
+    recognise: "'Tax of $\\$t$ per loaf', 'excise tax', 'sales tax'.",
+    applies: "Incidence calculations, DWL, government revenue.",
+    pitfall: "Statutory side (who LEGALLY pays) is irrelevant to economic incidence (who BEARS the burden).",
+  },
+  {
+    term: "Tax incidence",
+    chapterId: 2, category: "distortion",
+    definition: "The actual distribution of a tax's burden between consumers and producers. Determined by relative elasticities.",
+    math: "Consumer burden share $= d/(b+d)$. Less elastic side bears more.",
+    recognise: "Question asks 'who bears the burden?'.",
+    applies: "Tax policy welfare, comparing taxes on consumers vs producers.",
+    pitfall: "Less elastic side bears MORE. Demand $|dq/dp| = 2$ is MORE elastic than supply $|dq/dp| = 1$.",
+  },
+  {
+    term: "Deadweight loss (DWL)",
+    chapterId: 2, category: "welfare",
+    definition: "The surplus that would have existed under efficient trading but is destroyed by a distortion (tax, ceiling, subsidy, monopoly markup, externality).",
+    math: "Linear tax: $DWL = \\tfrac{1}{2} \\cdot t \\cdot \\Delta q \\propto t^2$.",
+    recognise: "Triangle on the diagram, between demand and supply, beyond the traded quantity.",
+    applies: "Comparing welfare costs of policies.",
+    pitfall: "$DWL \\propto t^2$ for linear curves. Doubling $t$ quadruples DWL (top-3 exam trap).",
+  },
+  {
+    term: "Price ceiling",
+    chapterId: 2, category: "distortion",
+    definition: "Maximum price set by government, BELOW the equilibrium. Creates a shortage; $q_s < q_d$.",
+    math: "Binding when $p_{\\max} < p^*$. Shortage $= q_d(p_{\\max}) - q_s(p_{\\max})$.",
+    recognise: "'Rent control', 'maximum price', 'price cap'.",
+    applies: "Welfare essay archetype: ceiling → shortage → DWL → subsidy alternative → quasilinear waiting time.",
+    example: "$q_d = 26 - p$, $q_s = 0.3p$, $p_{\\max} = 10$. $q_d = 16$, $q_s = 3$, shortage = 13.",
+    pitfall: "DWL height is $D(q_s) - p_{\\max}$, NOT $p^* - p_{\\max}$.",
+  },
+  {
+    term: "Price floor",
+    chapterId: 2, category: "distortion",
+    definition: "Minimum price set by government, ABOVE the equilibrium. Creates a surplus; $q_s > q_d$.",
+    recognise: "'Minimum wage', 'agricultural support price', 'price floor'.",
+    applies: "Same recipe as ceiling but mirrored.",
+    pitfall: "DWL = ½ × (q_eq − q_d_at_floor) × (floor − D(q_d_at_floor)).",
+  },
+  {
+    term: "Per-unit subsidy",
+    chapterId: 2, category: "distortion",
+    definition: "Government pays $s$ per unit. Equivalent to a negative tax — shifts S down by $s$, creates DWL on the over-production side.",
+    math: "$p_c$ falls; $p_s$ rises. Subsidy DWL $= \\tfrac{1}{2} \\cdot s \\cdot (q^{\\text{sub}} - q^*)$.",
+    recognise: "'Government pays $\\$s$ for each unit sold/produced'.",
+    applies: "Often proposed as a 'remedy' to a price ceiling; usually creates a LARGER DWL than the ceiling alone.",
+    pitfall: "Subsidies do have DWL. They over-produce relative to $q^*$.",
+  },
+
+  // ===== Chapter 3: Trade =====
+  {
+    term: "Tariff",
+    chapterId: 3, category: "trade",
+    definition: "Tax on imports. Raises domestic price in the importing country from $p^*$ to $p^* + t$.",
+    math: "Importer's tariff revenue $= t \\times$ (imports under tariff).",
+    recognise: "Question has 'world price', 'importing country', 'tariff $t$'.",
+    applies: "Trade welfare, tariff surplus table essay archetype.",
+    pitfall: "Importing government collects revenue. The exporting country does NOT.",
+  },
+  {
+    term: "Quota",
+    chapterId: 3, category: "trade",
+    definition: "Quantitative limit on imports. Equivalent to a tariff in price-effect but the rent goes to whoever holds the licence.",
+    recognise: "'Import licence', 'volume restriction'.",
+    applies: "Trade restrictions when revenue collection is impractical.",
+    pitfall: "Same DWL as equivalent tariff; only the rent destination differs (government vs licence-holder).",
+  },
+  {
+    term: "Comparative advantage",
+    chapterId: 3, category: "trade",
+    definition: "A country has comparative advantage in a good if it produces it at lower opportunity cost than another country. Drives gains from trade.",
+    recognise: "Two-country, two-good problem asking who should specialise.",
+    applies: "Free-trade welfare argument: each country specialises, total output rises.",
+    pitfall: "Absolute advantage (lower input requirement) is DIFFERENT from comparative advantage. The country worse at everything still has comparative advantage in something.",
+  },
+  {
+    term: "Tariff DWL — two triangles",
+    chapterId: 3, category: "trade",
+    definition: "An import tariff creates TWO DWL triangles: production distortion (domestic firms over-produce) and consumption distortion (consumers under-consume).",
+    math: "$DWL = \\tfrac{1}{2} \\cdot t \\cdot (q_s^t - q_s^{ft}) + \\tfrac{1}{2} \\cdot t \\cdot (q_d^{ft} - q_d^t)$",
+    recognise: "Tariff diagram has 4 shaded regions in importer: 2 transfers + 2 DWL.",
+    applies: "Tariff welfare essay.",
+    pitfall: "The revenue rectangle is a TRANSFER, not DWL.",
+  },
+
+  // ===== Chapter 4: Externalities =====
+  {
+    term: "Externality",
+    chapterId: 4, category: "externality",
+    definition: "An effect of one agent's action on a third party not reflected in market prices. Negative (pollution) or positive (vaccines).",
+    recognise: "'Smoke affects neighbours', 'vaccination protects others', any 'third-party' phrase.",
+    applies: "Identifying market failures, Pigouvian remedies.",
+    pitfall: "A trade between two willing parties is NOT an externality. Externalities affect a THIRD party.",
+  },
+  {
+    term: "Pigouvian tax",
+    chapterId: 4, category: "externality",
+    definition: "A tax equal to the marginal external cost (MEC) at the social optimum. Aligns private MC with social MC.",
+    math: "$t^* = MEC(q^S)$",
+    recognise: "'Corrective tax', 'tax to internalise the externality'.",
+    applies: "Negative-externality remedy. Positive externalities use a Pigouvian SUBSIDY.",
+    pitfall: "Evaluate MEC at $q^S$ (social optimum), NOT at $q^N$ (private Nash).",
+  },
+  {
+    term: "Coase Theorem",
+    chapterId: 4, category: "externality",
+    definition: "With well-defined property rights and zero transaction costs, parties bargain to the efficient outcome regardless of initial rights assignment.",
+    recognise: "'Well-defined property rights', 'bargaining', 'transaction costs'.",
+    applies: "Externality solutions when Pigouvian taxes are impractical.",
+    pitfall: "Fails when transaction costs are high (many small parties) or when rights are contested.",
+  },
+  {
+    term: "Marginal external cost (MEC) / benefit (MEB)",
+    chapterId: 4, category: "externality",
+    definition: "Additional cost (or benefit) imposed on (or received by) third parties from one more unit of the activity.",
+    math: "Social marginal cost: $SMC = PMC + MEC$. Social marginal benefit: $SMB = PMB + MEB$.",
+    recognise: "Externality problems where the gap between private and social curves is given.",
+    applies: "Pigouvian tax/subsidy size calculation.",
+    pitfall: "MEC can depend on $q$. In that case, $t^*$ is $MEC(q^S)$.",
+  },
+
+  // ===== Chapter 5: Asymmetric info =====
+  {
+    term: "Adverse selection",
+    chapterId: 5, category: "info",
+    definition: "Market failure where one side cannot distinguish types and ends up with a worse mix than the underlying population. Low-types stay, high-types exit.",
+    recognise: "'Hidden type', 'pre-contract information asymmetry', 'insurance pool'.",
+    applies: "Insurance, used-car markets, lending.",
+    pitfall: "Insurance variant: LOW-risk types exit when faced with average premium. BAD drives out GOOD.",
+  },
+  {
+    term: "Moral hazard",
+    chapterId: 5, category: "info",
+    definition: "Market failure where insured parties change their behaviour because they no longer bear the full cost of their actions.",
+    recognise: "'Hidden action', 'after the contract', 'incentive to take risk'.",
+    applies: "Insurance contract design, principal-agent problems.",
+    pitfall: "Moral hazard ≠ adverse selection. Hidden ACTION vs hidden TYPE.",
+  },
+  {
+    term: "Signalling (Spence)",
+    chapterId: 5, category: "info",
+    definition: "High-type agents send a costly signal (e.g. education) that low-type agents would not find worth mimicking. Reveals type.",
+    math: "Separating equilibrium requires signal cost cheaper for high-type.",
+    recognise: "'Credential', 'degree', 'reputation' — anything observable that types differ in willingness to pay for.",
+    applies: "Labour market screening.",
+    pitfall: "If signal cost is identical across types, the signal carries no information.",
+  },
+  {
+    term: "Screening (Rothschild-Stiglitz)",
+    chapterId: 5, category: "info",
+    definition: "Insurer designs a menu of contracts so different types self-select into different ones, revealing their type.",
+    recognise: "'Coverage menu', 'low-deductible vs high-deductible', 'IC constraint'.",
+    applies: "Insurance design, second-best welfare.",
+    pitfall: "Second-best outcome is strictly worse than first-best (full info), but better than pooling.",
+  },
+  {
+    term: "Akerlof's lemons",
+    chapterId: 5, category: "info",
+    definition: "Canonical adverse-selection model. Buyers offer the average value of unobserved quality; high-quality sellers withdraw; equilibrium has only low-quality.",
+    recognise: "Used cars, peer-to-peer markets, opaque quality.",
+    applies: "Conceptual basis for adverse selection in any market with quality asymmetry.",
+    pitfall: "'High quality drives out low' is BACKWARDS. Lemons drive out peaches.",
+  },
+
+  // ===== Chapter 6: Monopoly =====
+  {
+    term: "Monopoly",
+    chapterId: 6, category: "monopoly",
+    definition: "A market with a single seller facing the full demand curve. Sets $MR = MC$, charges $p > MC$.",
+    math: "Linear: $q^M = (\\alpha - MC)/(2\\beta)$, $p^M = \\alpha - \\beta q^M$.",
+    recognise: "'Single seller', 'patent holder', 'natural monopoly'.",
+    applies: "Welfare comparisons, regulation, pass-through analysis.",
+    pitfall: "Monopolist faces ALL demand, not the residual after competitors. Total revenue is $p(q) \\cdot q$.",
+  },
+  {
+    term: "Marginal revenue (MR)",
+    chapterId: 6, category: "monopoly",
+    definition: "The change in total revenue from one more unit. For linear demand $p = \\alpha - \\beta q$, $MR = \\alpha - 2\\beta q$ — twice the slope of demand.",
+    math: "$MR = p \\cdot (1 - 1/|\\varepsilon|)$ for any demand.",
+    recognise: "Question about a monopolist's optimal quantity.",
+    applies: "Setting $MR = MC$ to find $q^M$.",
+    pitfall: "MR slope is TWICE the demand slope for linear demand. Easy to forget the factor of 2.",
+  },
+  {
+    term: "Lerner index",
+    chapterId: 6, category: "monopoly",
+    definition: "Measure of monopoly markup: $L = (p - MC)/p$. Equals $1/|\\varepsilon|$ for a profit-max monopolist.",
+    math: "$L = (p - MC)/p = 1/|\\varepsilon|$",
+    recognise: "'Markup', 'market power', 'monopoly pricing power'.",
+    applies: "Antitrust, monopoly welfare assessment.",
+    pitfall: "Only valid for constant-elasticity demand at the profit-max point. For linear demand it varies along the curve.",
+  },
+  {
+    term: "Third-degree price discrimination",
+    chapterId: 6, category: "monopoly",
+    definition: "Monopolist sells the same product at different prices in separable markets. Equates MR across markets to MC.",
+    math: "$MR_i = MC$ in each market $i$. Higher $p$ where demand is less elastic.",
+    recognise: "'Student discount', 'export pricing', 'business vs leisure airline tickets'.",
+    applies: "Multi-market monopoly pricing, welfare.",
+    pitfall: "Welfare effect is ambiguous. PD can RAISE total welfare by serving markets that would otherwise be unserved.",
+  },
+  {
+    term: "Natural monopoly",
+    chapterId: 6, category: "monopoly",
+    definition: "An industry where one firm can supply the entire market at lower cost than two or more firms could. Characterised by decreasing AC.",
+    recognise: "Utilities (water, electricity), pipelines, broadband.",
+    applies: "Regulation: $P = MC$ requires subsidy (since $MC < AC$); $P = AC$ breaks even but has DWL.",
+    pitfall: "Decreasing AC implies $MC < AC$ everywhere. Setting $P = MC$ ⇒ losses.",
+  },
+  {
+    term: "Cournot competition",
+    chapterId: 6, category: "monopoly",
+    definition: "Oligopoly where firms simultaneously choose QUANTITIES. Each best-responds to the other's quantity.",
+    math: "Symmetric, linear: $q_i^* = (\\alpha - MC)/(3\\beta)$. Total Q between monopoly and competition.",
+    recognise: "'Duopoly', 'simultaneous quantity choice', 'best-response function'.",
+    applies: "Strategic interaction between few sellers.",
+    pitfall: "Cournot Q is HIGHER than monopoly Q but LOWER than competitive Q.",
+  },
+  {
+    term: "Stackelberg competition",
+    chapterId: 6, category: "monopoly",
+    definition: "Sequential oligopoly: leader chooses quantity first; follower observes and best-responds. Leader earns higher profit than under Cournot.",
+    math: "Leader: $q_L^* = (\\alpha - 2 MC + MC_F)/(2\\beta)$. Follower plays best-response.",
+    recognise: "'Move first', 'incumbent vs entrant', 'commitment'.",
+    applies: "Strategic timing, first-mover advantage.",
+    pitfall: "Backward induction: solve follower's problem first, substitute into leader's optimisation.",
+  },
+
+  // ===== Meta / cross-chapter =====
+  {
+    term: "Pareto efficiency",
+    chapterId: 1, category: "welfare",
+    definition: "No reallocation can make one person better off without making another worse off.",
+    recognise: "Welfare comparisons, 1st/2nd Welfare Theorems.",
+    applies: "Identifying when a market outcome is efficient (or not).",
+    pitfall: "Pareto efficiency does NOT imply fairness. Vast inequality can be Pareto efficient.",
+  },
+  {
+    term: "Elasticity of demand",
+    chapterId: 1, category: "consumer",
+    definition: "Percentage change in quantity demanded per percentage change in price.",
+    math: "$\\varepsilon = \\frac{dq/q}{dp/p} = \\frac{dq}{dp} \\cdot \\frac{p}{q}$",
+    recognise: "Inelastic if $|\\varepsilon| < 1$, elastic if $> 1$, unit-elastic if $= 1$.",
+    applies: "Tax incidence, monopoly markup (Lerner), welfare-area shape.",
+    pitfall: "For LINEAR demand, elasticity VARIES along the curve. For CONSTANT-elasticity demand, it's constant by definition.",
+  },
+  {
+    term: "Choke price",
+    chapterId: 1, category: "consumer",
+    definition: "The price at which quantity demanded falls to zero. For linear demand $q = a - bp$, $p_{\\text{choke}} = a/b$.",
+    recognise: "Vertical intercept of the demand curve.",
+    applies: "Welfare-triangle area, choke-wedge tax problems.",
+    pitfall: "Constant-elasticity demand has NO finite choke price — $q$ approaches 0 only as $p \\to \\infty$.",
+  },
+];
+
+// Convenience lookups
+export const CONCEPTS_BY_CHAPTER = {};
+CONCEPTS.forEach(c => {
+  if (!CONCEPTS_BY_CHAPTER[c.chapterId]) CONCEPTS_BY_CHAPTER[c.chapterId] = [];
+  CONCEPTS_BY_CHAPTER[c.chapterId].push(c);
+});
+
+export const CONCEPT_CATEGORIES = {
+  consumer:    { label: "Consumer theory" },
+  producer:    { label: "Producer theory" },
+  welfare:     { label: "Welfare & equilibrium" },
+  distortion:  { label: "Distortions" },
+  trade:       { label: "Trade" },
+  externality: { label: "Externalities" },
+  info:        { label: "Asymmetric info" },
+  monopoly:    { label: "Monopoly" },
+};

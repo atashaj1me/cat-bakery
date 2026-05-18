@@ -53,12 +53,16 @@ export function tryUnlockCheats(ctx) {
 
 /** Read helpers. */
 export function getUnlockedCheats() {
-  const ids = State.get().bakery.cheatsheets || [];
+  const s = State.get();
+  if (s.bakery.redHotPan) return CHEATS;     // emergency access: show everything
+  const ids = s.bakery.cheatsheets || [];
   return ids.map(id => CHEAT_BY_ID[id]).filter(Boolean);
 }
 
 export function isCheatUnlocked(id) {
-  return (State.get().bakery.cheatsheets || []).includes(id);
+  const s = State.get();
+  if (s.bakery.redHotPan) return true;        // emergency access: show everything
+  return (s.bakery.cheatsheets || []).includes(id);
 }
 
 export function getCheatProgress(id) {
@@ -68,7 +72,9 @@ export function getCheatProgress(id) {
 export function totalCheats() { return CHEATS.length; }
 
 export function unlockedCount() {
-  return (State.get().bakery.cheatsheets || []).length;
+  const s = State.get();
+  if (s.bakery.redHotPan) return CHEATS.length;
+  return (s.bakery.cheatsheets || []).length;
 }
 
 if (typeof window !== "undefined") {
