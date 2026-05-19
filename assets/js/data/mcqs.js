@@ -674,3 +674,398 @@ export const MOCK_REMEDIATION = {
   5: 0, 6: 6, 7: 6, 8: 2, 9: 0,
   10: 2, 11: 2, 12: 5, 13: 6, 14: 2,
 };
+
+// MOCK_POOL — 15 slots, each with multiple alternates matching the practice
+// test's topical distribution. generateFinalMock() draws one question per
+// slot, so every attempt is a fresh exam covering the SAME topics in the
+// SAME order but with different numerical setups and conceptual framings.
+//
+// Index 0 of each slot is the question already in FINAL_MOCK above; the
+// additional entries are new alternates verified independently.
+
+export const MOCK_POOL = [
+  // ============== SLOT 1 — Ch13 long-run competitive equilibrium ==============
+  [
+    FINAL_MOCK[0],
+    {
+      prompt: "A competitive firm has cost $C(q) = 4 + q^2$. In long-run equilibrium with free entry, the market price equals:",
+      options: ["$\\$2$", "$\\$4$", "$\\$6$", "$\\$8$"],
+      answer: 1,
+      explanation: "LR eq: $P = \\min AC$. $AC(q) = 4/q + q$. $\\frac{d}{dq}AC = -4/q^2 + 1 = 0 \\Rightarrow q = 2$, $AC(2) = 2 + 2 = 4$. So $P = 4$.",
+      tag: "Ch13",
+    },
+    {
+      prompt: "In a competitive industry, firms currently earn positive economic profit. In the long run, what happens?",
+      options: [
+        "Government taxes their profits away",
+        "Entry occurs until $P = \\min AC$ and economic profit returns to zero",
+        "Profits remain positive forever",
+        "Firms collude into a monopoly",
+      ],
+      answer: 1,
+      explanation: "Free entry/exit drives the long-run economic profit to zero. New firms enter until $P$ falls to $\\min AC$ — at which point no new entry is profitable.",
+      tag: "Ch13",
+    },
+  ],
+
+  // ============== SLOT 2 — Ch4-5 tastes / utility classes ==============
+  [
+    FINAL_MOCK[1],
+    {
+      prompt: "Cobb-Douglas utility $u(x, y) = x^{0.4} y^{0.6}$ implies the consumer spends what fraction of income on $x$?",
+      options: ["$0.4$", "$0.6$", "$0.5$", "Depends on prices"],
+      answer: 0,
+      explanation: "Cobb-Douglas constant expenditure shares: $\\frac{\\alpha}{\\alpha + \\beta} = \\frac{0.4}{1.0} = 0.4$. Independent of prices.",
+      tag: "Ch4-5",
+    },
+    {
+      prompt: "Which utility class implies that demand for $x$ is INDEPENDENT of income (zero income effect on $x$)?",
+      options: [
+        "Cobb-Douglas",
+        "Quasilinear $u(x, y) = v(x) + y$",
+        "Perfect substitutes",
+        "Perfect complements",
+      ],
+      answer: 1,
+      explanation: "Quasilinear: $v'(x^*) = p_x / p_y$ determines $x^*$ from prices alone. Income variation lands entirely in the residual $y$.",
+      tag: "Ch4-5",
+    },
+  ],
+
+  // ============== SLOT 3 — Ch21 externalities / 1st Welfare ==============
+  [
+    FINAL_MOCK[2],
+    {
+      prompt: "The Coase Theorem says the efficient outcome is reached when:",
+      options: [
+        "The government sets a Pigouvian tax equal to MEC",
+        "Transaction costs are zero AND property rights are well-defined",
+        "Property rights are assigned to the polluter only",
+        "Property rights are assigned to the victim only",
+      ],
+      answer: 1,
+      explanation: "Coase: zero transaction costs + well-defined property rights → bargaining reaches the efficient $q^*$ REGARDLESS of who holds the right. The rights assignment changes who pays whom, not the efficient quantity.",
+      tag: "Ch21",
+    },
+    {
+      prompt: "A negative externality in production implies that, in private equilibrium:",
+      options: [
+        "Private marginal cost equals social marginal cost",
+        "Private marginal cost is LESS than social marginal cost",
+        "Private marginal cost is GREATER than social marginal cost",
+        "The market under-produces",
+      ],
+      answer: 1,
+      explanation: "Negative externality means producers ignore the external harm. $PMC < SMC$. The private market OVER-produces relative to the social optimum.",
+      tag: "Ch21",
+    },
+  ],
+
+  // ============== SLOT 4 — Ch18 price ceiling political economy ==============
+  [
+    FINAL_MOCK[3],
+    {
+      prompt: "Under a binding price ceiling on rent, the actual quantity traded is determined by:",
+      options: [
+        "The demand side (the shorter side)",
+        "The supply side (the shorter side)",
+        "The midpoint of demand and supply",
+        "Government quota",
+      ],
+      answer: 1,
+      explanation: "Binding ceiling $\\Rightarrow$ $q_s < q_d$. The market is rationed by the SHORT side — supply. Even though more consumers want to buy, only $q_s$ units exist.",
+      tag: "Ch18",
+    },
+    {
+      prompt: "A binding price floor on agricultural goods (e.g. minimum dairy prices) typically creates:",
+      options: [
+        "A shortage of dairy",
+        "A surplus of dairy (over-production)",
+        "Efficient allocation",
+        "Zero DWL because farmers are happier",
+      ],
+      answer: 1,
+      explanation: "Binding floor $\\Rightarrow$ price above $p^*$. $q_s$ exceeds $q_d$. Surplus that the government often buys, stores, or destroys — each option has its own DWL.",
+      tag: "Ch18",
+    },
+  ],
+
+  // ============== SLOT 5 — Ch21 numerical externality ==============
+  [
+    FINAL_MOCK[4],
+    {
+      prompt: "Utility from driving $u(d, h) = 12d - d^2 - 4h$ with $h = d$. The Nash and social-planner choices are:",
+      options: [
+        "$d_N = 6, d_S = 4$",
+        "$d_N = 4, d_S = 6$",
+        "$d_N = 8, d_S = 4$",
+        "$d_N = 6, d_S = 6$",
+      ],
+      answer: 0,
+      explanation: "Nash (holds $h$ constant): $12 - 2d = 0 \\Rightarrow d_N = 6$. Social ($h = d$): $u = 8d - d^2$, $8 - 2d = 0 \\Rightarrow d_S = 4$. Gap = 2 = $\\gamma/?$... actually $\\gamma = 4$, gap = 2, Pigouvian = $\\gamma = 4$.",
+      tag: "Ch21",
+    },
+    {
+      prompt: "$u(d, h) = 10d - d^2 - 3h$ with $h = d$. The Pigouvian tax that aligns Nash with social optimum is:",
+      options: ["$1.5$", "$3$", "$5$", "$10$"],
+      answer: 1,
+      explanation: "$\\gamma = 3$ is the marginal external cost. The Pigouvian tax equals $\\gamma = 3$, closing the gap between Nash $d_N = 5$ and social $d_S = 3.5$.",
+      tag: "Ch21",
+    },
+  ],
+
+  // ============== SLOT 6 — Ch12 production ==============
+  [
+    FINAL_MOCK[5],
+    {
+      prompt: "Production $f(x_1, x_2) = 6\\sqrt{x_1} + 4\\sqrt{x_2}$, $w_1 = 2, w_2 = 1, p = 2$. Optimal $x_1^*$ equals:",
+      options: ["$9$", "$16$", "$4$", "$36$"],
+      answer: 0,
+      explanation: "Separable production. $x_1^* = (a_1 p / (2 w_1))^2 = (6 \\cdot 2 / (2 \\cdot 2))^2 = 3^2 = 9$.",
+      tag: "Ch12",
+    },
+    {
+      prompt: "Single-input production $y = a\\sqrt{L}$ with $a = 6, w = 3, p = 1$. Optimum profit equals:",
+      options: ["$3$", "$6$", "$9$", "$12$"],
+      answer: 0,
+      explanation: "Closed form: $\\pi^* = a^2 p^2 / (4 w) = 36 \\cdot 1 / 12 = 3$. (Check: $L^* = (6/6)^2 = 1$, $y^* = 6$, profit $= 6 - 3 = 3$.)",
+      tag: "Ch12",
+    },
+  ],
+
+  // ============== SLOT 7 — Ch23 monopoly + tax ==============
+  [
+    FINAL_MOCK[6],
+    {
+      prompt: "Monopolist faces linear demand $p = 30 - q$ and $MC = 6$. A per-unit tax $t = 6$ is imposed. The new monopoly price equals:",
+      options: ["$\\$18$", "$\\$21$", "$\\$24$", "$\\$30$"],
+      answer: 1,
+      explanation: "Pre-tax: $MR = 30 - 2q = 6 \\Rightarrow q = 12, p = 18$. Post-tax $MC = 12$: $MR = 12 \\Rightarrow q = 9, p = 21$. $\\Delta p = 3 = t/2$.",
+      tag: "Ch23",
+    },
+    {
+      prompt: "A monopolist with constant-elasticity demand $|\\varepsilon| = 2$ and $MC = 1$ faces a $\\$1$ per-unit tax. The post-tax price becomes:",
+      options: ["$\\$3$", "$\\$4$", "$\\$2$", "$\\$5$"],
+      answer: 1,
+      explanation: "Effective $MC = 1 + 1 = 2$. $p = MC/(1 - 1/|\\varepsilon|) = 2/(1 - 1/2) = 4$. Pre-tax price was $1/(1/2) = 2$, so $\\Delta p = 2$ — FULL pass-through, distinct from the linear-demand half-rule.",
+      tag: "Ch23",
+    },
+  ],
+
+  // ============== SLOT 8 — Ch23 3rd-degree PD ==============
+  [
+    FINAL_MOCK[7],
+    {
+      prompt: "Monopolist with $MC = 3$ practices 3rd-degree PD in two markets: M1 $p = 15 - q/100$, M2 $p = 12 - q/200$. Which market gets the HIGHER price?",
+      options: ["M1", "M2", "Equal prices", "Cannot determine"],
+      answer: 0,
+      explanation: "M1: $MR = 15 - q/50 = 3 \\Rightarrow q = 600, p = 9$. M2: $MR = 12 - q/100 = 3 \\Rightarrow q = 900, p = 7.5$. M1 has the less elastic demand at the optimum and the higher price.",
+      tag: "Ch23",
+    },
+    {
+      prompt: "Under 3rd-degree price discrimination, the monopolist charges a higher price in the market with:",
+      options: [
+        "More elastic demand",
+        "Less elastic demand",
+        "Lower marginal cost",
+        "Smaller population",
+      ],
+      answer: 1,
+      explanation: "By Lerner: $\\frac{p_i - MC}{p_i} = \\frac{1}{|\\varepsilon_i|}$. Smaller $|\\varepsilon_i|$ (less elastic) ⇒ higher markup ⇒ higher price.",
+      tag: "Ch23",
+    },
+  ],
+
+  // ============== SLOT 9 — Ch19 statutory incidence ==============
+  [
+    FINAL_MOCK[8],
+    {
+      prompt: "A $\\$2$ tax is legally remitted by producers. Demand is perfectly INELASTIC. Who bears the burden?",
+      options: [
+        "Producers fully",
+        "Consumers fully",
+        "50-50 split",
+        "Cannot determine without supply elasticity",
+      ],
+      answer: 1,
+      explanation: "Burden goes to the less elastic side. Perfectly inelastic demand ⇒ consumer share = 100%. Producers pass the entire tax through. (Statutory side is irrelevant.)",
+      tag: "Ch19",
+    },
+    {
+      prompt: "Government tax revenue from a per-unit tax $t$ in a competitive market equals:",
+      options: [
+        "$t$ multiplied by the no-tax quantity",
+        "$t$ multiplied by the post-tax quantity actually traded",
+        "$t$ multiplied by the consumer-side burden",
+        "$t$ multiplied by the deadweight loss",
+      ],
+      answer: 1,
+      explanation: "Revenue $= t \\times q_{\\text{post-tax}}$ — the actual quantity transacted, NOT the no-tax quantity (some trades disappear) and NOT any burden component.",
+      tag: "Ch19",
+    },
+  ],
+
+  // ============== SLOT 10 — Ch3 intertemporal ==============
+  [
+    FINAL_MOCK[9],
+    {
+      prompt: "A cat earns $m_1 = 10$ today and $m_2 = 21$ tomorrow. Interest rate $r = 0.05$ for both saving and borrowing. Maximum consumption today (if she borrows to the max) is:",
+      options: ["$\\$30$", "$\\$31$", "$\\$20$", "$\\$10$"],
+      answer: 0,
+      explanation: "Lifetime budget: $c_1 \\leq m_1 + m_2/(1+r) = 10 + 21/1.05 = 10 + 20 = 30$. She can borrow up to $20$ today against tomorrow's $21$.",
+      tag: "Ch3",
+    },
+    {
+      prompt: "A consumer is a SAVER (net lender) in a two-period model if her chosen $c_1$ satisfies:",
+      options: [
+        "$c_1 > m_1$",
+        "$c_1 < m_1$",
+        "$c_1 = m_1$",
+        "$c_1 < m_2$",
+      ],
+      answer: 1,
+      explanation: "Saver = consumes less than current income, lends the difference. $c_1 < m_1$.",
+      tag: "Ch3",
+    },
+  ],
+
+  // ============== SLOT 11 — Ch19 numerical tax incidence ==============
+  [
+    FINAL_MOCK[10],
+    {
+      prompt: "Demand $q_d = 18 - p$, supply $q_s = 0.5p$. A $\\$3$ per-unit tax. Consumer-paid price $p_c$ equals:",
+      options: ["$\\$12$", "$\\$13$", "$\\$14$", "$\\$15$"],
+      answer: 1,
+      explanation: "$p_c = (a + d t)/(b + d) = (18 + 0.5 \\cdot 3)/(1 + 0.5) = 19.5/1.5 = 13$. Consumer share $= d/(b+d) = 1/3$, so $\\Delta p_c = 1$ from $p^* = 12$.",
+      tag: "Ch19",
+    },
+    {
+      prompt: "Supply is perfectly elastic at a fixed marginal cost. A $\\$5$ per-unit tax causes the consumer price to rise by:",
+      options: ["$\\$0$", "$\\$2.50$", "$\\$5$", "$\\$10$"],
+      answer: 2,
+      explanation: "Perfectly elastic supply ($d \\to \\infty$): consumer share $= d/(b+d) \\to 1$. Full pass-through: $\\Delta p_c = t = \\$5$. Producers bear nothing.",
+      tag: "Ch19",
+    },
+  ],
+
+  // ============== SLOT 12 — Ch19 DWL convexity ==============
+  [
+    FINAL_MOCK[11],
+    {
+      prompt: "Tripling a per-unit tax on a market with linear $D$ and $S$ generates a DWL that is:",
+      options: [
+        "Three times the original",
+        "Nine times the original",
+        "Six times the original",
+        "Unchanged",
+      ],
+      answer: 1,
+      explanation: "$DWL \\propto t^2$ for linear $D$ and $S$. Tripling $t$ multiplies DWL by $3^2 = 9$.",
+      tag: "Ch19",
+    },
+    {
+      prompt: "For linear demand and supply, the DWL of a per-unit tax grows with the tax rate as:",
+      options: [
+        "Linearly (proportional to $t$)",
+        "Quadratically (proportional to $t^2$)",
+        "Exponentially",
+        "Logarithmically",
+      ],
+      answer: 1,
+      explanation: "$DWL = \\tfrac{1}{2} t \\cdot \\Delta q$ and $\\Delta q$ itself is proportional to $t$. Thus $DWL \\propto t^2$.",
+      tag: "Ch19",
+    },
+  ],
+
+  // ============== SLOT 13 — Ch22 adverse selection ==============
+  [
+    FINAL_MOCK[12],
+    {
+      prompt: "The key distinction between adverse selection and moral hazard is:",
+      options: [
+        "Both are forms of the same problem",
+        "Adverse selection = hidden TYPE before contracting; moral hazard = hidden ACTION after contracting",
+        "Adverse selection only occurs in insurance",
+        "Moral hazard only occurs in labour markets",
+      ],
+      answer: 1,
+      explanation: "Adverse selection is PRE-contract (insurer can't see whether you're high-risk or low-risk). Moral hazard is POST-contract (insurer can't see whether you drive carelessly because you're insured).",
+      tag: "Ch22",
+    },
+    {
+      prompt: "Spence signalling achieves a separating equilibrium when:",
+      options: [
+        "The signal is free for everyone",
+        "The signal is cheaper for high-productivity types than low-productivity types",
+        "The signal is required by law",
+        "Employers can directly observe productivity",
+      ],
+      answer: 1,
+      explanation: "Spence: signal cost must differ across types. Cheaper for high-types ⇒ they signal, low-types don't mimic. Equal-cost signals carry no information.",
+      tag: "Ch22",
+    },
+  ],
+
+  // ============== SLOT 14 — Ch23 constant-elasticity Lerner ==============
+  [
+    FINAL_MOCK[13],
+    {
+      prompt: "Constant-elasticity demand with $|\\varepsilon| = 4$ and $MC = 3$. Profit-maximising monopoly price equals:",
+      options: ["$\\$4$", "$\\$3.75$", "$\\$3$", "$\\$12$"],
+      answer: 0,
+      explanation: "$p = MC / (1 - 1/|\\varepsilon|) = 3 / (1 - 0.25) = 3 / 0.75 = 4$.",
+      tag: "Ch23",
+    },
+    {
+      prompt: "A monopolist's Lerner index $L = (p - MC)/p$ is observed to equal $1/3$. The implied (absolute) demand elasticity is:",
+      options: ["$1/3$", "$3$", "$0.5$", "Cannot determine"],
+      answer: 1,
+      explanation: "$L = 1/|\\varepsilon| \\Rightarrow |\\varepsilon| = 1/L = 3$.",
+      tag: "Ch23",
+    },
+  ],
+
+  // ============== SLOT 15 — Ch19 choke-price tax ==============
+  [
+    FINAL_MOCK[14],
+    {
+      prompt: "Demand $q_d = 60 - 2p$, supply $q_s = 4p$. The smallest per-unit tax that eliminates trade is:",
+      options: ["$10$", "$20$", "$30$", "$60$"],
+      answer: 2,
+      explanation: "Choke price $= 60/2 = 30$ (where $q_d = 0$). Supply minimum price $= 0$. Wedge that kills trade $= 30 - 0 = \\$30$.",
+      tag: "Ch19",
+    },
+    {
+      prompt: "$q_d = 20 - 4p$, $q_s = 2p$. The choke-price tax equals:",
+      options: ["$5$", "$10$", "$15$", "$20$"],
+      answer: 0,
+      explanation: "Choke price $= 20/4 = 5$. $p_{\\min}^{\\text{supply}} = 0$. Wedge $= 5$.",
+      tag: "Ch19",
+    },
+  ],
+];
+
+/**
+ * Draw 15 questions for a Final Mock attempt — one from each MOCK_POOL slot.
+ * Preserves the practice-test topical distribution (Ch13 ×1, Ch4-5 ×1,
+ * Ch21 ×2, Ch18 ×1, Ch12 ×1, Ch23 ×3, Ch19 ×4, Ch3 ×1, Ch22 ×1) but each
+ * attempt picks a different combination. ~3^15 ≈ 14 million distinct exams.
+ *
+ * If `seed` is omitted, uses Math.random(). With a seed, deterministic.
+ */
+export function generateFinalMock(seed) {
+  const rng = seed == null ? Math.random : seededRandom(seed);
+  return MOCK_POOL.map(slot => slot[Math.floor(rng() * slot.length)]);
+}
+
+/** Tiny mulberry32-style PRNG so seeded draws are stable across reloads. */
+function seededRandom(seed) {
+  let a = (seed | 0) || 1;
+  return function() {
+    a |= 0; a = a + 0x6D2B79F5 | 0;
+    let t = a;
+    t = Math.imul(t ^ t >>> 15, t | 1);
+    t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}

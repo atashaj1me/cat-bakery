@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=JetBrains+Mono:wght@400;600&display=swap">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV" crossorigin="anonymous">
-  <link rel="stylesheet" href="../assets/css/style.css?v=11">
+  <link rel="stylesheet" href="../assets/css/style.css?v=12">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ctext y='52' font-size='52'%3E🥐%3C/text%3E%3C/svg%3E">
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" integrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8" crossorigin="anonymous"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" integrity="sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05" crossorigin="anonymous"></script>
@@ -34,17 +34,17 @@
 
   <script type="module">
 
-    import "../assets/js/red-hot-pan.js?v=11";
-    import { State } from "../assets/js/state.js?v=11";
-    import { DAYS, getDay, flavorLine } from "../assets/js/data/days.js?v=11";
-    import { HELL_DAYS, getHellDay } from "../assets/js/data/days-hell.js?v=11";
-    import { APOCALYPSE_DAYS, getApocalypseDay } from "../assets/js/data/days-apocalypse.js?v=11";
-    import { ARC_SCROLLS, NPC_INTERJECTIONS, MEMORY_TEMPLATES } from "../assets/js/data/lore-apocalypse.js?v=11";
-    import { CATS, purchase } from "../assets/js/data/cats.js?v=11";
-    import { TECHS, TECH_LIST, getTech, rollTech } from "../assets/js/data/technologies.js?v=11";
-    import { FINAL_MOCK, MOCK_REMEDIATION } from "../assets/js/data/mcqs.js?v=11";
-    import { tryUnlockCheats } from "../assets/js/cheats.js?v=11";
-    import { CHEAT_BY_ID } from "../assets/js/data/cheatsheets.js?v=11";
+    import "../assets/js/red-hot-pan.js?v=12";
+    import { State } from "../assets/js/state.js?v=12";
+    import { DAYS, getDay, flavorLine } from "../assets/js/data/days.js?v=12";
+    import { HELL_DAYS, getHellDay } from "../assets/js/data/days-hell.js?v=12";
+    import { APOCALYPSE_DAYS, getApocalypseDay } from "../assets/js/data/days-apocalypse.js?v=12";
+    import { ARC_SCROLLS, NPC_INTERJECTIONS, MEMORY_TEMPLATES } from "../assets/js/data/lore-apocalypse.js?v=12";
+    import { CATS, purchase } from "../assets/js/data/cats.js?v=12";
+    import { TECHS, TECH_LIST, getTech, rollTech } from "../assets/js/data/technologies.js?v=12";
+    import { FINAL_MOCK, MOCK_REMEDIATION, generateFinalMock } from "../assets/js/data/mcqs.js?v=12";
+    import { tryUnlockCheats } from "../assets/js/cheats.js?v=12";
+    import { CHEAT_BY_ID } from "../assets/js/data/cheatsheets.js?v=12";
 
     // --- mode detection from URL ---
     const urlParams = new URLSearchParams(window.location.search);
@@ -864,12 +864,16 @@
       `;
 
       if (!blitzState || blitzState.day !== day.day) {
-        // Pick 15 questions: use all of FINAL_MOCK (which is already 15)
+        // Draw a fresh 15-question exam from MOCK_POOL — one per topic slot
+        const drawSeed = (Math.random() * 1e6) | 0;
+        const questions = generateFinalMock(drawSeed);
         blitzState = {
           day: day.day,
+          drawSeed,
+          questions,
           startTime: null,
           remainingSec: day.timeSec || (30 * 60),
-          answers: new Array(FINAL_MOCK.length).fill(null),
+          answers: new Array(questions.length).fill(null),
           submitted: false,
         };
       }
@@ -904,7 +908,7 @@
         <div id="blitz-result"></div>
       `;
       const qHost = document.getElementById("blitz-questions");
-      qHost.innerHTML = FINAL_MOCK.map((q, idx) => `
+      qHost.innerHTML = blitzState.questions.map((q, idx) => `
         <div class="mcq">
           <h4>Q${idx + 1}. ${q.prompt}</h4>
           <div class="options">
@@ -920,7 +924,7 @@
       typesetMath();
 
       // Wire answer tracking
-      FINAL_MOCK.forEach((q, idx) => {
+      blitzState.questions.forEach((q, idx) => {
         document.querySelectorAll(`input[name="blitz-q${idx}"]`).forEach(el => {
           el.addEventListener("change", e => { blitzState.answers[idx] = parseInt(e.target.value, 10); });
         });
@@ -952,14 +956,14 @@
     function finalizeBlitz(day) {
       if (blitzState.submitted) return;
       blitzState.submitted = true;
-      const correct = blitzState.answers.map((a, i) => a === FINAL_MOCK[i].answer);
+      const correct = blitzState.answers.map((a, i) => a === blitzState.questions[i].answer);
       const numCorrect = correct.filter(Boolean).length;
-      const blitzScore = Math.round((numCorrect / FINAL_MOCK.length) * 100);
+      const blitzScore = Math.round((numCorrect / blitzState.questions.length) * 100);
 
       // Apply as a day result with one "phase" score
       const cashDelta = Math.round((blitzScore - 50) * 1.5);
       const repDelta = blitzScore >= 90 ? 0.4 : blitzScore >= 70 ? 0.2 : blitzScore >= 50 ? 0 : -0.35;
-      const summary = `MCQ blitz: ${numCorrect}/${FINAL_MOCK.length} correct (${blitzScore}/100).`;
+      const summary = `MCQ blitz: ${numCorrect}/${blitzState.questions.length} correct (${blitzScore}/100). Draw #${blitzState.drawSeed.toString().padStart(6, "0")}.`;
 
       State.applyApocalypseDayResult({
         day: day.day, title: day.title, cashDelta, repDelta, summary,
@@ -976,14 +980,14 @@
       const result = document.getElementById("blitz-result");
       result.innerHTML = `
         <div class="consequence-banner ${blitzScore >= 80 ? "win" : blitzScore >= 50 ? "" : "fail"}">
-          <strong>Blitz complete.</strong> Score: ${numCorrect}/${FINAL_MOCK.length} (${blitzScore}/100).
+          <strong>Blitz complete.</strong> Score: ${numCorrect}/${blitzState.questions.length} (${blitzScore}/100). <small style="color:var(--ink-soft);">Draw #${blitzState.drawSeed.toString().padStart(6, "0")}</small>
         </div>
         <div class="card">
           <h3>Per-question review</h3>
           <table class="essay-table">
             <thead><tr><th>Q</th><th>Tag</th><th>Your answer</th><th>Correct</th><th>Practice</th></tr></thead>
             <tbody>
-              ${FINAL_MOCK.map((q, i) => {
+              ${blitzState.questions.map((q, i) => {
                 const yours = blitzState.answers[i] == null ? "—" : String.fromCharCode(65 + blitzState.answers[i]);
                 const right = String.fromCharCode(65 + q.answer);
                 const ok = correct[i];
