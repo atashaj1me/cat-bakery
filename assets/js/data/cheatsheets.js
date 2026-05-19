@@ -521,6 +521,157 @@ export const CHEATS = [
     unlock: (ctx) => ctx.trigger === "mcq" && ctx.chapterId === 6 && ctx.mcqIdx === 2 && ctx.correct,
   },
   {
+    id: "first-deg-pd",
+    icon: "🎯",
+    title: "1st-degree (perfect) PD: efficiency, no DWL",
+    category: MONOPOLY,
+    lockedHint: "What if the monopolist could charge each customer their EXACT willingness-to-pay?",
+    content: `
+      First-degree price discrimination: the monopolist charges each consumer their exact WTP.
+      <ul>
+        <li><strong>Quantity:</strong> rises all the way to the competitive level $q^c$ (where $P = MC$).</li>
+        <li><strong>Producer profit:</strong> captures the ENTIRE area under demand above $MC$ — both old CS and old PS.</li>
+        <li><strong>Consumer surplus:</strong> exactly zero.</li>
+        <li><strong>DWL:</strong> zero. Outcome is Pareto efficient (just very unequal).</li>
+      </ul>
+      <strong>Where it appears:</strong> auctions, individualised pricing, "tell me your budget and I'll quote".<br>
+      <strong>The trap:</strong> 1st-degree PD is efficient but extreme inequality. Don't confuse "efficient" with "equitable" — they're orthogonal.
+    `,
+    discoveryLine: "Discovered by acing the 3rd-deg PD MCQ — the natural counterpoint to PD's most extreme form.",
+    unlock: (ctx) => ctx.trigger === "mcq" && ctx.chapterId === 6 && ctx.mcqIdx === 2 && ctx.correct,
+  },
+  {
+    id: "second-deg-pd",
+    icon: "📦",
+    title: "2nd-degree PD: menu pricing, self-selection",
+    category: MONOPOLY,
+    lockedHint: "Quantity discounts, two-part tariffs. Why do they work?",
+    content: `
+      Second-degree PD: offer a MENU of (price, quantity) bundles. Consumers self-select based on their type.
+      <br><br>
+      Common forms:
+      <ul>
+        <li><strong>Block pricing:</strong> first $q_1$ units at $p_1$, next $q_2$ units at lower $p_2$. Bulk discount.</li>
+        <li><strong>Two-part tariff:</strong> fixed fee $F$ + per-unit $p$. If consumers homogeneous: set $p = MC$ and $F = \\text{(surplus at } MC\\text{)}$ — capture all CS.</li>
+        <li><strong>Versioning:</strong> basic vs premium. The same underlying product at different qualities.</li>
+      </ul>
+      <strong>Why it matters:</strong> achievable with KNOWLEDGE of the WTP distribution, not each individual's WTP. Much more practical than 1st-degree.<br>
+      <strong>The trap:</strong> with heterogeneous consumers, the optimal $F$ is NOT the highest WTP — that drives low-types out.
+    `,
+    discoveryLine: "Discovered by acing the screening-menu phase on Apocalypse Day 10 (the 'menu pricing' insight).",
+    unlock: (ctx) => ctx.trigger === "apoc-phase" && ctx.day === 10 && ctx.phaseIdx === 1 && ctx.score >= 80,
+  },
+  {
+    id: "two-part-tariff",
+    icon: "🎟️",
+    title: "Two-part tariff: $p = MC$, $F$ = consumer surplus",
+    category: MONOPOLY,
+    lockedHint: "Charge a cover at the door, then sell drinks at cost. Why?",
+    content: `
+      With identical consumers, the monopolist's optimal two-part tariff is:
+      <p>$$p = MC, \\qquad F = \\text{CS at } p = MC$$</p>
+      Charging $p = MC$ gives the EFFICIENT quantity (no DWL). The fixed fee $F$ extracts ALL the consumer surplus that would normally accrue from that efficient quantity.
+      <br><br>
+      <strong>Where it appears:</strong> gym memberships, Costco, amusement-park entry-plus-rides.<br>
+      <strong>The trap:</strong> heterogeneous consumers — set $F$ too high and low-WTP customers don't enter. Compute optimal $F$ given the WTP distribution.
+    `,
+    discoveryLine: "Discovered by answering the 3rd-deg PD MCQ correctly twice (the rule generalises to all multi-instrument pricing).",
+    unlock: (ctx) => ctx.trigger === "mcq" && ctx.chapterId === 6 && ctx.mcqIdx === 2 && ctx.correct,
+    needs: 2,
+  },
+  {
+    id: "marshallian-vs-hicksian",
+    icon: "↔️",
+    title: "Marshallian (income fixed) vs Hicksian (utility fixed)",
+    category: CONSUMER,
+    lockedHint: "Two demand curves for one good. They differ by an effect you've already met.",
+    content: `
+      <strong>Marshallian</strong> $x^M(p, I)$ — what you usually plot. Income held constant. Reflects TOTAL effect of a price change (SE + IE).
+      <br><br>
+      <strong>Hicksian</strong> $x^H(p, \\bar u)$ — utility held constant via compensation. Reflects ONLY the substitution effect.
+      <br><br>
+      Key identity: $x^M(p_1, I) - x^M(p_0, I) = \\underbrace{x^H(p_1, u_0) - x^H(p_0, u_0)}_{\\text{SE}} + \\underbrace{x^M(p_1, I) - x^H(p_1, u_0)}_{\\text{IE}}$
+      <br><br>
+      <strong>The trap:</strong> Hicksian demand always slopes DOWNWARD in own price. Giffen behaviour (upward-sloping) is a MARSHALLIAN phenomenon only.
+    `,
+    discoveryLine: "Discovered after computing both the Marshallian and the Hicksian demand on Apocalypse Day 2 (the Slutsky day).",
+    unlock: (ctx) => ctx.trigger === "apoc-phase" && ctx.day === 2 && ctx.phaseIdx === 1 && ctx.score >= 80,
+  },
+  {
+    id: "cross-price-elasticity-sign",
+    icon: "🔁",
+    title: "Cross-price elasticity sign: substitutes (+) vs complements (−)",
+    category: CONSUMER,
+    lockedHint: "Two goods, one tells you about the other. Sign matters.",
+    content: `
+      Cross-price elasticity: $\\varepsilon_{xy} = \\dfrac{\\partial q_x}{\\partial p_y} \\cdot \\dfrac{p_y}{q_x}$.
+      <br><br>
+      $\\quad$ <strong>$\\varepsilon_{xy} > 0$:</strong> SUBSTITUTES. Price of $y$ up ⇒ demand for $x$ up. (Bread and bagels.)<br>
+      $\\quad$ <strong>$\\varepsilon_{xy} < 0$:</strong> COMPLEMENTS. Price of $y$ up ⇒ demand for $x$ down. (Butter and croissants.)<br>
+      $\\quad$ <strong>$\\varepsilon_{xy} \\approx 0$:</strong> Independent.
+      <br><br>
+      <strong>Where it appears:</strong> two-market problems with cross-effects (Apocalypse Day 5), antitrust market-definition arguments.<br>
+      <strong>The trap:</strong> "negative cross-elasticity" doesn't mean inferior — it means complement. Don't confuse cross-elasticity (between goods) with income elasticity (within one good).
+    `,
+    discoveryLine: "Discovered by completing the two-market equilibrium with cross-effects on Apocalypse Day 5.",
+    unlock: (ctx) => ctx.trigger === "apoc-phase" && ctx.day === 5 && ctx.phaseIdx === 0 && ctx.score >= 80,
+  },
+  {
+    id: "income-elasticity-classification",
+    icon: "📈",
+    title: "Income elasticity classifies the good",
+    category: CONSUMER,
+    lockedHint: "One number tells you whether it's a luxury, a necessity, or inferior.",
+    content: `
+      Income elasticity $\\varepsilon_I = \\dfrac{\\partial q}{\\partial I} \\cdot \\dfrac{I}{q}$.
+      <br><br>
+      $\\quad$ <strong>$\\varepsilon_I > 1$:</strong> LUXURY (e.g. fancy cake). Demand grows faster than income.<br>
+      $\\quad$ <strong>$0 < \\varepsilon_I < 1$:</strong> NECESSITY (normal good, e.g. basic bread). Demand grows but slower.<br>
+      $\\quad$ <strong>$\\varepsilon_I < 0$:</strong> INFERIOR (e.g. day-old bread). Demand SHRINKS as income rises.<br>
+      $\\quad$ <strong>$\\varepsilon_I = 1$:</strong> UNIT — Cobb-Douglas always satisfies this.
+      <br><br>
+      <strong>Where it appears:</strong> Engel-curve identification, growth predictions, Slutsky decomposition direction.<br>
+      <strong>The trap:</strong> inferior $\\neq$ Giffen. Inferior just means $\\varepsilon_I < 0$. Giffen requires a Marshallian upward-sloping demand curve, which needs the income effect to dominate the substitution effect.
+    `,
+    discoveryLine: "Discovered by correctly identifying Mrs Furrington's inferior-good behaviour.",
+    unlock: (ctx) => ctx.trigger === "mcq" && ctx.chapterId === 0 && ctx.correct,
+    needs: 4,
+  },
+  {
+    id: "cv-equals-ev-quasilinear",
+    icon: "⚖️",
+    title: "Quasilinear: CV = EV = ΔCS exactly",
+    category: META,
+    lockedHint: "Three welfare measures collapse into one — under one specific assumption.",
+    content: `
+      For QUASILINEAR utility, the three money-metric welfare measures coincide exactly:
+      <p>$$CV = EV = \\Delta CS$$</p>
+      <strong>Why this matters:</strong> the welfare-essay archetype assumes quasilinear consumers SPECIFICALLY so that $\\Delta CS$ is the exact welfare cost, not an approximation. The exam essay relies on this implicitly.
+      <br><br>
+      <strong>The trap:</strong> for Cobb-Douglas and other preferences, CV $\\neq$ EV $\\neq$ $\\Delta CS$. Always check the utility class before claiming "$\\Delta CS$ is the welfare loss". If the problem doesn't say quasilinear, $\\Delta CS$ is only an APPROXIMATION.
+    `,
+    discoveryLine: "Discovered after acing Essay 1 (which uses quasilinear consumers for exactly this reason).",
+    unlock: (ctx) => ctx.trigger === "essay1" && ctx.score >= 80,
+  },
+  {
+    id: "ic-binds-on-high-type",
+    icon: "🔗",
+    title: "Screening: bind the HIGH-type's IC, not the low",
+    category: INFO,
+    lockedHint: "Which type's incentive constraint determines the second-best?",
+    content: `
+      In a separating contract menu (two risk types L, H), the binding constraint is the <strong>HIGH-type's</strong> incentive compatibility:
+      <p>$$u_H(\\text{H contract}) = u_H(\\text{L contract})$$</p>
+      Why? High-type WOULD mimic low-type if L's contract were too generous. So L's coverage is RATIONED downward until H is indifferent.
+      <br><br>
+      $\\quad k_L^* = \\dfrac{\\pi_H - \\pi_L}{1 - \\pi_L} \\cdot L$ at fair price $\\pi_L \\cdot k_L^*$.
+      <br><br>
+      <strong>The trap:</strong> Low-type's IC is NOT binding in equilibrium — they get LESS than they'd want, but H-type's threat to mimic is what forces it.
+    `,
+    discoveryLine: "Discovered by acing the screening-menu reasoning on Apocalypse Day 10.",
+    unlock: (ctx) => ctx.trigger === "apoc-phase" && ctx.day === 10 && ctx.phaseIdx === 2 && ctx.score >= 80,
+  },
+  {
     id: "natural-monopoly-loss",
     icon: "💸",
     title: "Natural monopoly: P = MC ⇒ losses",

@@ -71,16 +71,17 @@ export const APOCALYPSE_DAYS = [
       },
       {
         key: "ii", title: "Phase ii — Sir Pawley (quasilinear over pastry)", timeSec: 90,
+        narrative: "Pawley's utility is $u(x, y) = a\\sqrt{y} + x$ — quasilinear with bread $x$ as the numeraire (so its effective price is 1). He cares about pastry only at $p_y$.",
         fields: [
-          { id: "qy", label: "Pawley's pastry $y^*$ =", tol: 0.3 },
+          { id: "qy", label: "Pawley's pastry $y^*$ =", tol: 0.3, hint: "Quasilinear FOC: $v'(y) = p_y$ when $x$ is the numeraire." },
         ],
         grade(letter, a) {
-          // u = v(y) + x, v(y) = a·√y. FOC: v'(y) = p_y ⇒ a/(2√y) = p_y ⇒ y* = (a/(2p_y))²
+          // u = a√y + x with x as numeraire. FOC: v'(y) = p_y ⇒ a/(2√y) = p_y ⇒ y* = (a/(2p_y))²
           const { a: A, py } = letter.params.pawley;
           const opt = Math.pow(A / (2 * py), 2);
           return { targets: { qy: opt },
             scoreEach: (ans) => score(ans.qy, opt, 0.3),
-            summary: `Quasilinear: $v'(y) = p_y \\Rightarrow y^* = (a/2p_y)^2 = ${opt.toFixed(2)}$.` };
+            summary: `Pawley's utility $u = a\\sqrt{y} + x$ with $x$ as numeraire. FOC: $a/(2\\sqrt{y}) = p_y \\Rightarrow y^* = (a/(2 p_y))^2 = (6/6)^2 = ${opt.toFixed(2)}$.` };
         },
       },
       {
@@ -359,20 +360,23 @@ export const APOCALYPSE_DAYS = [
         },
       },
       {
-        key: "iii", title: "Phase iii — Total surplus", timeSec: 90,
+        key: "iii", title: "Phase iii — Total surplus", timeSec: 120,
         fields: [
           { id: "TS", label: "Total surplus across BOTH markets =", tol: 4 },
         ],
         grade(letter, a) {
           const r = twoMarketEq(letter.params);
-          const { m1, m2 } = letter.params;
-          // For each market, use surplus as triangle (D-only since linear)
-          const TS1 = 0.5 * (m1.a / m1.b - r.p1) * r.q1 + 0.5 * r.p1 * r.q1;
-          const TS2 = 0.5 * (m2.a / m2.b - r.p2) * r.q2 + 0.5 * r.p2 * r.q2;
+          const { m1, m2, cross12 = 0, cross21 = 0 } = letter.params;
+          // With cross-price effects, market i's effective demand-intercept shifts:
+          //   q_d_i = a_i - b_i p_i + cross_ij p_j  →  choke_i = (a_i + cross_ij p_j) / b_i
+          const choke1 = (m1.a + cross12 * r.p2) / m1.b;
+          const choke2 = (m2.a + cross21 * r.p1) / m2.b;
+          const TS1 = 0.5 * (choke1 - r.p1) * r.q1 + 0.5 * r.p1 * r.q1;
+          const TS2 = 0.5 * (choke2 - r.p2) * r.q2 + 0.5 * r.p2 * r.q2;
           const TS = TS1 + TS2;
           return { targets: { TS },
             scoreEach: (ans) => score(ans.TS, TS, 4),
-            summary: `$TS = ${TS.toFixed(2)}$ (sum of CS+PS triangles in both markets).` };
+            summary: `Market 1 choke (with cross-effect): $\\frac{a_1 + c_{12} p_2}{b_1} = ${choke1.toFixed(2)}$. Surplus: market 1 = ${TS1.toFixed(2)}, market 2 = ${TS2.toFixed(2)}. <strong>Total = ${TS.toFixed(2)}</strong>.` };
         },
       },
       {
@@ -723,18 +727,19 @@ export const APOCALYPSE_DAYS = [
     }),
     phases: [
       {
-        key: "i", title: "Phase i — Fair premiums", timeSec: 60,
+        key: "i", title: "Phase i — Fair-baseline premiums (FULL coverage)", timeSec: 60,
+        narrative: "First, compute each type's actuarially fair premium for FULL coverage. (These would be the first-best contracts if the insurer could verify type.)",
         fields: [
-          { id: "premL", label: "Fair premium for L =", tol: 0.5 },
-          { id: "premH", label: "Fair premium for H =", tol: 0.5 },
+          { id: "fairL", label: "Fair full-coverage premium for L ($\\pi_L \\cdot L$) =", tol: 0.5 },
+          { id: "fairH", label: "Fair full-coverage premium for H ($\\pi_H \\cdot L$) =", tol: 0.5 },
         ],
         grade(letter, a) {
-          const r = separatingMenu(letter.params);
-          return { targets: { premL: r.contracts[0].premium, premH: r.contracts[1].premium },
-            // For separation, L gets PARTIAL coverage so premL < πL·loss (which would be full coverage at L's fair price)
-            // Use exact targets from the helper
-            scoreEach: (ans) => avg([score(ans.premL, r.contracts[0].premium, 0.5), score(ans.premH, r.contracts[1].premium, 0.5)]),
-            summary: `H gets full coverage at $\\pi_H L = ${r.contracts[1].premium.toFixed(2)}$. L gets PARTIAL coverage $k_L^* = ${r.contracts[0].coverage.toFixed(2)}$ at $\\pi_L k_L = ${r.contracts[0].premium.toFixed(2)}$ — designed so H is indifferent (IC binds).` };
+          const { piL, piH, loss } = letter.params;
+          const fairL = piL * loss;   // 10
+          const fairH = piH * loss;   // 40
+          return { targets: { fairL, fairH },
+            scoreEach: (ans) => avg([score(ans.fairL, fairL, 0.5), score(ans.fairH, fairH, 0.5)]),
+            summary: `First-best (full coverage at each type's own fair rate): L pays $\\pi_L L = ${fairL.toFixed(2)}$, H pays $\\pi_H L = ${fairH.toFixed(2)}$. Under asymmetric info these contracts are NOT separating — H would pretend to be L.` };
         },
       },
       {

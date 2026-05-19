@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=JetBrains+Mono:wght@400;600&display=swap">
-  <link rel="stylesheet" href="assets/css/style.css?v=10">
+  <link rel="stylesheet" href="assets/css/style.css?v=11">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ctext y='52' font-size='52'%3E🥐%3C/text%3E%3C/svg%3E">
 </head>
 <body>
@@ -87,8 +87,8 @@
 
   <script type="module">
 
-    import "./assets/js/red-hot-pan.js?v=10";
-    import { State } from "./assets/js/state.js?v=10";
+    import "./assets/js/red-hot-pan.js?v=11";
+    import { State } from "./assets/js/state.js?v=11";
 
     const CHAPTERS = [
       { id: 0, num: "Notebook 0", title: "Bakery Preparation", desc: "Consumer choice · production · profit max", file: "chapters/0-bakery-preparation.html" },
@@ -143,7 +143,7 @@
       <div class="kpi"><span class="label">🏆 Badges</span><span class="value">${b.achievements.length}/${ACHIEVEMENTS.length}</span></div>
     `;
     // populate cheats total
-    import("./assets/js/data/cheatsheets.js?v=10").then(m => {
+    import("./assets/js/data/cheatsheets.js?v=11").then(m => {
       const el = document.getElementById("cheats-total");
       if (el) el.textContent = m.CHEATS.length;
     });
